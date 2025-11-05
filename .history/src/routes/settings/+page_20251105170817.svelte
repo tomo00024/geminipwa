@@ -2,32 +2,24 @@
 
 <script lang="ts">
 	import { base } from '$app/paths';
-	// ★ 1. ストアと onMount をインポートします
+	// ★ 1. appSettings ストアをインポートします
 	import { appSettings } from '$lib/stores';
-	import { onMount } from 'svelte';
 
-	// ★ 2. データを保持するためのローカル変数を再度用意します
-	let apiKey = '';
+	// onMountは不要になります。ストアが既にlocalStorageから値を読み込んでいます。
 
-	// ★ 3. ページ表示時に、ストアから最新の値を取得してローカル変数にセットします
-	onMount(() => {
-		// $appSettings を一度だけ参照して現在の値を取得します
-		apiKey = $appSettings.apiKey;
-	});
-
-	// ★ 4. 「保存」ボタンが押された時に、ローカル変数の値をストアに反映させます
 	function saveApiKey() {
-		appSettings.update((currentSettings) => {
-			// 現在のストアの値（currentSettings）を更新して返す
-			return { ...currentSettings, apiKey: apiKey };
-		});
+		// ★ 2. ストアを更新することで、変更がアプリ全体に伝わります。
+		//    bind:valueを使っているので、実際には入力と同時にストアは更新済みです。
+		//    この関数は、ユーザーに保存を通知する役割を果たします。
+		//    store.tsのsubscribeが自動でlocalStorageに保存します。
 		alert('APIキーを保存しました！');
 	}
 </script>
 
 <div class="p-4 max-w-2xl mx-auto">
+	<!-- ▼▼▼ ここからヘッダーの修正 ▼▼▼ -->
 	<div class="flex justify-between items-center mb-6">
-		<h1 class="text-2xl font-bold">アプリ設定</h1>
+		<h1 class="text-2xl font-bold">アプリ設定</h1> <!-- ← タイトルを変更 -->
 		<a
 			href="{base}/"
 			class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
@@ -35,6 +27,7 @@
 			履歴に戻る
 		</a>
 	</div>
+	<!-- ▲▲▲ ここまでヘッダーの修正 ▲▲▲ -->
 
 	<div class="space-y-2">
 		<label for="api-key" class="block font-medium">API Key</label>

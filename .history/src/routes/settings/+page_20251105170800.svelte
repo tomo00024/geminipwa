@@ -2,25 +2,16 @@
 
 <script lang="ts">
 	import { base } from '$app/paths';
-	// ★ 1. ストアと onMount をインポートします
+	// ★ 1. appSettings ストアをインポートします
 	import { appSettings } from '$lib/stores';
-	import { onMount } from 'svelte';
 
-	// ★ 2. データを保持するためのローカル変数を再度用意します
-	let apiKey = '';
+	// onMountは不要になります。ストアが既にlocalStorageから値を読み込んでいます。
 
-	// ★ 3. ページ表示時に、ストアから最新の値を取得してローカル変数にセットします
-	onMount(() => {
-		// $appSettings を一度だけ参照して現在の値を取得します
-		apiKey = $appSettings.apiKey;
-	});
-
-	// ★ 4. 「保存」ボタンが押された時に、ローカル変数の値をストアに反映させます
 	function saveApiKey() {
-		appSettings.update((currentSettings) => {
-			// 現在のストアの値（currentSettings）を更新して返す
-			return { ...currentSettings, apiKey: apiKey };
-		});
+		// ★ 2. ストアを更新することで、変更がアプリ全体に伝わります。
+		//    bind:valueを使っているので、実際には入力と同時にストアは更新済みです。
+		//    この関数は、ユーザーに保存を通知する役割を果たします。
+		//    store.tsのsubscribeが自動でlocalStorageに保存します。
 		alert('APIキーを保存しました！');
 	}
 </script>
@@ -41,7 +32,8 @@
 		<input
 			id="api-key"
 			type="password"
-			bind:value={apiKey}
+			-- ★ 3. ローカル変数ではなく、ストアのプロパティに直接双方向バインディングします --
+			bind:value={$appSettings.apiKey}
 			class="w-full max-w-md p-2 border rounded"
 			placeholder="sk-..."
 		/>
