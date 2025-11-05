@@ -1,4 +1,4 @@
-// src/lib/stores.ts
+// src/lib/store.ts
 
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment'; // browser環境かどうかを判定するためにインポート
