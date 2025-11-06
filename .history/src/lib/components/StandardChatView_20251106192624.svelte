@@ -2,8 +2,8 @@
 <script lang="ts">
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
-    import { tick, onMount, onDestroy } from 'svelte';    
-    
+	import { tick } from 'svelte'; // Svelteからtickをインポート
+
 	export let currentSession: any;
 	export let base: string;
 	export let isLoading: boolean;
@@ -14,32 +14,7 @@
 	let editingText = '';
 	let editingBubbleWidth = 0;
 
-	// ルート要素をバインドするための変数
-	let rootElement: HTMLDivElement;
-
-	/**
-	 * ビューポートの高さをCSSカスタムプロパティに設定する
-	 */
-	function setVh() {
-		if (rootElement) {
-			// window.innerHeightから取得した実際の高さを --vh という変数にセット
-			const vh = window.innerHeight * 0.01;
-			rootElement.style.setProperty('--vh', `${vh}px`);
-		}
-	}
-
-	// コンポーネントがマウントされた時に処理を実行
-	onMount(() => {
-		// 初回実行
-		setVh();
-		// ウィンドウサイズが変わった時にも実行するようにイベントリスナーを登録
-		window.addEventListener('resize', setVh);
-	});
-
-	// コンポーネントが破棄される時にイベントリスナーを解除 (メモリリーク防止)
-	onDestroy(() => {
-		window.removeEventListener('resize', setVh);
-	});
+	// ▼▼▼ ここからが追加・変更箇所です ▼▼▼
 
 	// textareaのDOM要素をバインドするための変数
 	let textareaElement: HTMLTextAreaElement;
@@ -115,7 +90,7 @@
 	}
 </script>
 
-<div bind:this={rootElement} style="height: calc(var(--vh, 1vh) * 100);" class="flex flex-col p-4">
+<div class="flex flex-col h-screen p-4">
 	<!-- ... ヘッダー部分は変更ありません ... -->
 	<div class="flex justify-between items-center mb-4">
 		<a
