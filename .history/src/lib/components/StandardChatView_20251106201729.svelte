@@ -89,7 +89,7 @@
 		}
 	}
 </script>
-<div class="flex flex-col h-screen h-[100dvh] p-4">
+<div class="flex flex-col h-screen p-4">
 	<!-- ... ヘッダー部分は変更ありません ... -->
 	<div class="flex justify-between items-center mb-4">
 		<a
