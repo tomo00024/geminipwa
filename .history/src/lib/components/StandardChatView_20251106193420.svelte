@@ -2,8 +2,8 @@
 <script lang="ts">
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
-	import { tick } from 'svelte'; // Svelteからtickをインポート
-
+    import { tick, onMount, onDestroy } from 'svelte';    
+    
 	export let currentSession: any;
 	export let base: string;
 	export let isLoading: boolean;
@@ -14,7 +14,32 @@
 	let editingText = '';
 	let editingBubbleWidth = 0;
 
-	// ▼▼▼ ここからが追加・変更箇所です ▼▼▼
+	// ルート要素をバインドするための変数
+	let rootElement: HTMLDivElement;
+
+	/**
+	 * ビューポートの高さをCSSカスタムプロパティに設定する
+	 */
+	function setVh() {
+		if (rootElement) {
+			// window.innerHeightから取得した実際の高さを --vh という変数にセット
+			const vh = window.innerHeight * 0.01;
+			rootElement.style.setProperty('--vh', `${vh}px`);
+		}
+	}
+
+	// コンポーネントがマウントされた時に処理を実行
+	onMount(() => {
+		// 初回実行
+		setVh();
+		// ウィンドウサイズが変わった時にも実行するようにイベントリスナーを登録
+		window.addEventListener('resize', setVh);
+	});
+
+	// コンポーネントが破棄される時にイベントリスナーを解除 (メモリリーク防止)
+	onDestroy(() => {
+		window.removeEventListener('resize', setVh);
+	});
 
 	// textareaのDOM要素をバインドするための変数
 	let textareaElement: HTMLTextAreaElement;
@@ -89,7 +114,8 @@
 		}
 	}
 </script>
-<div class="flex flex-col h-screen p-4">
+
+<div bind:this={rootElement} style="height: calc(var(--vh, 1vh) * 100);" class="flex flex-col p-4">
 	<!-- ... ヘッダー部分は変更ありません ... -->
 	<div class="flex justify-between items-center mb-4">
 		<a
@@ -113,102 +139,102 @@
 			</a>
 		</div>
 	</div>
-code
-Code
-<div class="flex-1 overflow-y-auto mb-4 space-y-4 p-2 bg-gray-100 rounded">
-	{#each currentSession.logs as message (message.timestamp)}
-		<div class="chat {message.speaker === 'user' ? 'chat-end' : 'chat-start'}">
-			<div class="chat-bubble group {message.speaker === 'user' ? 'chat-bubble-primary' : ''}">
-				{#if editingId === message.timestamp}
-					<!-- ▼▼▼ ここからが変更箇所です ▼▼▼ -->
-					<div class="flex flex-col gap-2" style="min-width: {editingBubbleWidth}px;">
-						<!-- 右上の閉じるボタン -->
-						<button
-							class="close-edit-button"
-							title="編集をキャンセル"
-							on:click={cancelEditing}
-						>
-							<!-- Heroicons: x-mark -->
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>
-						</button>
 
-						<textarea
-							bind:this={textareaElement}
-							bind:value={editingText}
-							class="textarea textarea-bordered w-full"
-							on:input={adjustTextareaHeight}
-							on:keydown={(e) => {
-								if (e.key === 'Enter' && !e.shiftKey) {
-									e.preventDefault();
-									saveEditing();
-								}
-							}}
-						></textarea>
-						<div class="flex justify-end gap-2">
-							<button class="btn btn-sm" on:click={cancelEditing}>キャンセル</button>
-							<button class="btn btn-sm btn-primary" on:click={saveEditing}>保存する</button>
+	<div class="flex-1 overflow-y-auto mb-4 space-y-4 p-2 bg-gray-100 rounded">
+		{#each currentSession.logs as message (message.timestamp)}
+			<div class="chat {message.speaker === 'user' ? 'chat-end' : 'chat-start'}">
+				<div class="chat-bubble group {message.speaker === 'user' ? 'chat-bubble-primary' : ''}">
+					{#if editingId === message.timestamp}
+						<!-- ▼▼▼ ここからが変更箇所です ▼▼▼ -->
+						<div class="flex flex-col gap-2" style="min-width: {editingBubbleWidth}px;">
+							<!-- 右上の閉じるボタン -->
+							<button
+								class="close-edit-button"
+								title="編集をキャンセル"
+								on:click={cancelEditing}
+							>
+								<!-- Heroicons: x-mark -->
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>
+							</button>
+
+							<textarea
+								bind:this={textareaElement}
+								bind:value={editingText}
+								class="textarea textarea-bordered w-full"
+								on:input={adjustTextareaHeight}
+								on:keydown={(e) => {
+									if (e.key === 'Enter' && !e.shiftKey) {
+										e.preventDefault();
+										saveEditing();
+									}
+								}}
+							></textarea>
+							<div class="flex justify-end gap-2">
+								<button class="btn btn-sm" on:click={cancelEditing}>キャンセル</button>
+								<button class="btn btn-sm btn-primary" on:click={saveEditing}>保存する</button>
+							</div>
 						</div>
-					</div>
-					<!-- ▲▲▲ ここまでが変更箇所です ▲▲▲ -->
-				{:else}
-					<!-- 通常表示のUI -->
-					{#if message.speaker === 'user'}
-						<p class="whitespace-pre-wrap">{message.text}</p>
+						<!-- ▲▲▲ ここまでが変更箇所です ▲▲▲ -->
 					{:else}
-						{#await marked(message.text)}
-							<p>...</p>
-						{:then rawHtml}
-							{@html DOMPurify.sanitize(rawHtml)}
-						{:catch error}
-							<p class="text-red-500">レンダリングエラー: {error.message}</p>
-						{/await}
+						<!-- 通常表示のUI -->
+						{#if message.speaker === 'user'}
+							<p class="whitespace-pre-wrap">{message.text}</p>
+						{:else}
+							{#await marked(message.text)}
+								<p>...</p>
+							{:then rawHtml}
+								{@html DOMPurify.sanitize(rawHtml)}
+							{:catch error}
+								<p class="text-red-500">レンダリングエラー: {error.message}</p>
+							{/await}
+						{/if}
 					{/if}
-				{/if}
 
-				<!-- フローティングメニュー (編集モードでない時だけ表示) -->
-				{#if editingId !== message.timestamp}
-					<div class="floating-menu">
-						<button
-							class="menu-button"
-							title="編集"
-							on:click={(event) => startEditing(message, event)}
-						>
-							<!-- Heroicons: pencil -->
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" /></svg>
-						</button>
-						<button
-							class="menu-button"
-							title="削除"
-							on:click={() => deleteMessage(message.timestamp)}
-						>
-							<!-- Heroicons: trash -->
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.58.22-2.365.468a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clip-rule="evenodd" /></svg>
-						</button>
-					</div>
-				{/if}
+					<!-- フローティングメニュー (編集モードでない時だけ表示) -->
+					{#if editingId !== message.timestamp}
+						<div class="floating-menu">
+							<button
+								class="menu-button"
+								title="編集"
+								on:click={(event) => startEditing(message, event)}
+							>
+								<!-- Heroicons: pencil -->
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" /></svg>
+							</button>
+							<button
+								class="menu-button"
+								title="削除"
+								on:click={() => deleteMessage(message.timestamp)}
+							>
+								<!-- Heroicons: trash -->
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.58.22-2.365.468a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clip-rule="evenodd" /></svg>
+							</button>
+						</div>
+					{/if}
+				</div>
 			</div>
-		</div>
-	{/each}
+		{/each}
 
-	{#if isLoading}
-		<div class="chat chat-start">
-			<div class="chat-bubble">考え中...</div>
-		</div>
-	{/if}
+		{#if isLoading}
+			<div class="chat chat-start">
+				<div class="chat-bubble">考え中...</div>
+			</div>
+		{/if}
+	</div>
+
+	<!-- ... フォーム部分は変更ありません ... -->
+	<form on:submit|preventDefault={handleSubmit} class="flex gap-2">
+		<input
+			type="text"
+			bind:value={userInput}
+			placeholder="メッセージを入力..."
+			class="input input-bordered flex-1"
+			disabled={isLoading}
+		/>
+		<button type="submit" class="btn btn-primary" disabled={isLoading}> 送信 </button>
+	</form>
 </div>
 
-<!-- ... フォーム部分は変更ありません ... -->
-<form on:submit|preventDefault={handleSubmit} class="flex gap-2">
-	<input
-		type="text"
-		bind:value={userInput}
-		placeholder="メッセージを入力..."
-		class="input input-bordered flex-1"
-		disabled={isLoading}
-	/>
-	<button type="submit" class="btn btn-primary" disabled={isLoading}> 送信 </button>
-</form>
-</div>
 <!-- ... styleタグの中身は変更ありません ... -->
 <style>
 	/* styleタグの中身は変更ありません */
