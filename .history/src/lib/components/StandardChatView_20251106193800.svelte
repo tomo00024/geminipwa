@@ -1,5 +1,4 @@
 <!-- src/lib/components/StandardChatView.svelte -->
- 
 <script lang="ts">
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
