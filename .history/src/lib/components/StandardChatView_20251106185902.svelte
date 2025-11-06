@@ -2,7 +2,6 @@
 <script lang="ts">
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
-	import { tick } from 'svelte'; // Svelteからtickをインポート
 
 	export let currentSession: any;
 	export let base: string;
@@ -10,51 +9,19 @@
 	export let userInput: string;
 	export let handleSubmit: () => Promise<void>;
 
+	// どのメッセージが編集中かを識別するための変数 (message.timestamp をIDとして利用)
 	let editingId: number | null = null;
+	// 編集中のテキストを保持するための変数
 	let editingText = '';
-	let editingBubbleWidth = 0;
-
-	// ▼▼▼ ここからが追加・変更箇所です ▼▼▼
-
-	// textareaのDOM要素をバインドするための変数
-	let textareaElement: HTMLTextAreaElement;
-
-	/**
-	 * textareaの高さを内容に合わせて自動調整する
-	 */
-	function adjustTextareaHeight() {
-		// 要素がまだ存在しない場合は何もしない
-		if (!textareaElement) return;
-
-		// 高さを一度リセットして、scrollHeightを正しく計算させる
-		textareaElement.style.height = 'auto';
-		// scrollHeightに基づいて高さを再設定する
-		textareaElement.style.height = `${textareaElement.scrollHeight}px`;
-	}
 
 	/**
 	 * 編集モードを開始する
 	 * @param message 編集対象のメッセージオブジェクト
-	 * @param event クリックイベント
 	 */
-	async function startEditing(message: any, event: MouseEvent) {
-		const bubbleElement = (event.currentTarget as HTMLElement).closest('.chat-bubble');
-
-		if (bubbleElement instanceof HTMLElement) {
-			editingBubbleWidth = bubbleElement.offsetWidth;
-		}
-
+	function startEditing(message: any) {
 		editingId = message.timestamp;
 		editingText = message.text;
-
-		// DOMの更新が終わるのを待つ
-		await tick();
-
-		// DOM更新後にtextareaの高さを調整する
-		adjustTextareaHeight();
 	}
-
-	// ▲▲▲ ここまでが追加・変更箇所です ▲▲▲
 
 	/**
 	 * 編集をキャンセルする
@@ -70,12 +37,17 @@
 	function saveEditing() {
 		if (editingId === null) return;
 
+		// currentSession.logs 配列を更新する
+		// Svelteのリアクティビティをトリガーするため、配列を再代入する
 		currentSession.logs = currentSession.logs.map((log: any) => {
 			if (log.timestamp === editingId) {
+				// IDが一致したらテキストを更新した新しいオブジェクトを返す
 				return { ...log, text: editingText };
 			}
 			return log;
 		});
+
+		// 編集モードを終了
 		cancelEditing();
 	}
 
@@ -84,6 +56,7 @@
 	 * @param messageId 削除対象のメッセージID (timestamp)
 	 */
 	function deleteMessage(messageId: number) {
+		// 確認ダイアログを表示（任意）
 		if (confirm('このメッセージを削除しますか？')) {
 			currentSession.logs = currentSession.logs.filter((log: any) => log.timestamp !== messageId);
 		}
@@ -117,39 +90,24 @@
 
 	<div class="flex-1 overflow-y-auto mb-4 space-y-4 p-2 bg-gray-100 rounded">
 		{#each currentSession.logs as message (message.timestamp)}
+			<!-- ▼▼▼ 構造を元に戻し、エラーを修正しました ▼▼▼ -->
 			<div class="chat {message.speaker === 'user' ? 'chat-end' : 'chat-start'}">
 				<div class="chat-bubble group {message.speaker === 'user' ? 'chat-bubble-primary' : ''}">
+					<!-- 編集モードか通常表示かを切り替える -->
 					{#if editingId === message.timestamp}
-						<!-- ▼▼▼ ここからが変更箇所です ▼▼▼ -->
-						<div class="flex flex-col gap-2" style="min-width: {editingBubbleWidth}px;">
-							<!-- 右上の閉じるボタン -->
-							<button
-								class="close-edit-button"
-								title="編集をキャンセル"
-								on:click={cancelEditing}
-							>
-								<!-- Heroicons: x-mark -->
-								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>
-							</button>
-
+						<!-- 編集モードのUI -->
+						<div class="flex flex-col gap-2">
+							<!-- <textarea /> を <textarea></textarea> に修正 -->
 							<textarea
-								bind:this={textareaElement}
 								bind:value={editingText}
 								class="textarea textarea-bordered w-full"
-								on:input={adjustTextareaHeight}
-								on:keydown={(e) => {
-									if (e.key === 'Enter' && !e.shiftKey) {
-										e.preventDefault();
-										saveEditing();
-									}
-								}}
+								rows="4"
 							></textarea>
 							<div class="flex justify-end gap-2">
 								<button class="btn btn-sm" on:click={cancelEditing}>キャンセル</button>
 								<button class="btn btn-sm btn-primary" on:click={saveEditing}>保存する</button>
 							</div>
 						</div>
-						<!-- ▲▲▲ ここまでが変更箇所です ▲▲▲ -->
 					{:else}
 						<!-- 通常表示のUI -->
 						{#if message.speaker === 'user'}
@@ -168,26 +126,35 @@
 					<!-- フローティングメニュー (編集モードでない時だけ表示) -->
 					{#if editingId !== message.timestamp}
 						<div class="floating-menu">
-							<button
-								class="menu-button"
-								title="編集"
-								on:click={(event) => startEditing(message, event)}
-							>
+							<!-- 編集ボタン -->
+							<button class="menu-button" title="編集" on:click={() => startEditing(message)}>
 								<!-- Heroicons: pencil -->
-								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" /></svg>
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+									><path
+										d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z"
+									/></svg
+								>
 							</button>
+							<!-- 削除ボタン -->
 							<button
 								class="menu-button"
 								title="削除"
 								on:click={() => deleteMessage(message.timestamp)}
 							>
 								<!-- Heroicons: trash -->
-								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.58.22-2.365.468a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clip-rule="evenodd" /></svg>
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+									><path
+										fill-rule="evenodd"
+										d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.58.22-2.365.468a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z"
+										clip-rule="evenodd"
+									/></svg
+								>
 							</button>
 						</div>
 					{/if}
 				</div>
 			</div>
+			<!-- ▲▲▲ ここまでが変更箇所です ▲▲▲ -->
 		{/each}
 
 		{#if isLoading}
@@ -210,9 +177,9 @@
 	</form>
 </div>
 
-<!-- ... styleタグの中身は変更ありません ... -->
+<!-- ▼▼▼ styleタグを修正しました ▼▼▼ -->
 <style>
-	/* styleタグの中身は変更ありません */
+	/* ... 既存のスタイル ... */
 	.chat {
 		display: grid;
 		grid-template-columns: 1fr;
@@ -223,13 +190,15 @@
 	.chat-end {
 		justify-items: end;
 	}
+	/* chat-bubbleにrelativeを追加して、フローティングメニューの位置の基準にする */
 	.chat-bubble {
-		position: relative;
+		position: relative; /* ★変更★ */
 		max-width: 90%;
 		padding: 0.5rem 1rem;
 		border-radius: 1rem;
 		background-color: #f0f0f0;
 	}
+	/* ... Markdown関連のスタイルは変更なし ... */
 	.chat-bubble :global(h1),
 	.chat-bubble :global(h2),
 	.chat-bubble :global(h3) {
@@ -278,9 +247,15 @@
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
+
+	/* ▼▼▼ ここからが追加・変更したスタイルです ▼▼▼ */
+
+	/* 不要になった .chat-message-container のスタイルを削除 */
+
+	/* フローティングメニューのコンテナ */
 	.floating-menu {
 		position: absolute;
-		top: -0.5rem;
+		top: -0.5rem; /* 吹き出しの上部に表示 */
 		right: 1rem;
 		display: flex;
 		gap: 0.25rem;
@@ -288,36 +263,50 @@
 		border-radius: 9999px;
 		padding: 0.25rem;
 		box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+
+		/* 最初は非表示にしておく */
 		opacity: 0;
 		visibility: hidden;
 		transform: translateY(4px);
 		transition: all 0.2s ease-in-out;
 	}
+
+	/* chat-bubbleをホバーした時にメニューを表示 */
 	.chat-bubble.group:hover .floating-menu {
 		opacity: 1;
 		visibility: visible;
 		transform: translateY(0);
 	}
+
+	/* AI側のメッセージのメニュー位置を調整 */
+	.chat-start .floating-menu {
+		left: 1rem;
+		right: auto;
+	}
+
+	/* メニュー内のボタンのスタイル */
 	.menu-button {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 1.75rem;
-		height: 1.75rem;
+		width: 1.75rem; /* 28px */
+		height: 1.75rem; /* 28px */
 		border-radius: 9999px;
 		background-color: transparent;
-		color: #6b7280;
+		color: #6b7280; /* gray-500 */
 		border: none;
 		cursor: pointer;
 	}
 	.menu-button:hover {
-		background-color: #f3f4f6;
-		color: #1f2937;
+		background-color: #f3f4f6; /* gray-100 */
+		color: #1f2937; /* gray-800 */
 	}
 	.menu-button svg {
-		width: 1rem;
-		height: 1rem;
+		width: 1rem; /* 16px */
+		height: 1rem; /* 16px */
 	}
+
+	/* 編集用テキストエリアのスタイル（daisyUIのクラスを参考に） */
 	.textarea {
 		background-color: white;
 		border-color: #d1d5db;
@@ -329,62 +318,5 @@
 		background-color: #1d4ed8;
 		border-color: #3b82f6;
 		color: white;
-	}
-    	.textarea {
-		background-color: white;
-		border-color: #d1d5db;
-		color: black;
-		padding: 0.5rem;
-		border-radius: 0.25rem;
-		
-		/* --- 追加 --- */
-		/* デフォルトのリサイズハンドルを非表示に */
-		resize: none;
-		/* はみ出した内容を隠し、スクロールバーを非表示に */
-		overflow-y: hidden;
-		/* 最低限の高さを確保 */
-		min-height: 4rem; /* 約2.5行分 */
-	}
-	/* ▲▲▲ ここまでが変更・追加したスタイルです ▲▲▲ */
-
-	.chat-bubble-primary .textarea {
-		background-color: #1d4ed8;
-		border-color: #3b82f6;
-		color: white;
-	}
-    	.close-edit-button {
-		position: absolute;
-		top: 0.5rem;  /* 8px */
-		right: 0.5rem; /* 8px */
-		z-index: 10;   /* textareaの上に表示されるように */
-
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 1.5rem;  /* 24px */
-		height: 1.5rem; /* 24px */
-		border-radius: 9999px; /* 円形に */
-		background-color: #e5e7eb; /* gray-200 */
-		color: #4b5563; /* gray-600 */
-		border: none;
-		cursor: pointer;
-		transition: all 0.2s ease-in-out;
-	}
-	.close-edit-button:hover {
-		background-color: #d1d5db; /* gray-300 */
-		transform: scale(1.1);
-	}
-	.close-edit-button svg {
-		width: 1rem; /* 16px */
-		height: 1rem; /* 16px */
-	}
-
-	/* ユーザー側の吹き出し(青色)の閉じるボタンの配色を調整 */
-	.chat-bubble-primary .close-edit-button {
-		background-color: #1e40af; /* blue-800 */
-		color: #dbeafe; /* blue-100 */
-	}
-	.chat-bubble-primary .close-edit-button:hover {
-		background-color: #1d4ed8; /* blue-700 */
 	}
 </style>

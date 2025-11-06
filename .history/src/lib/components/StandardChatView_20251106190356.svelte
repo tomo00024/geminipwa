@@ -120,18 +120,8 @@
 			<div class="chat {message.speaker === 'user' ? 'chat-end' : 'chat-start'}">
 				<div class="chat-bubble group {message.speaker === 'user' ? 'chat-bubble-primary' : ''}">
 					{#if editingId === message.timestamp}
-						<!-- ▼▼▼ ここからが変更箇所です ▼▼▼ -->
 						<div class="flex flex-col gap-2" style="min-width: {editingBubbleWidth}px;">
-							<!-- 右上の閉じるボタン -->
-							<button
-								class="close-edit-button"
-								title="編集をキャンセル"
-								on:click={cancelEditing}
-							>
-								<!-- Heroicons: x-mark -->
-								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>
-							</button>
-
+							<!-- ▼▼▼ ここからが変更箇所です ▼▼▼ -->
 							<textarea
 								bind:this={textareaElement}
 								bind:value={editingText}
@@ -144,12 +134,12 @@
 									}
 								}}
 							></textarea>
+							<!-- ▲▲▲ ここまでが変更箇所です ▲▲▲ -->
 							<div class="flex justify-end gap-2">
 								<button class="btn btn-sm" on:click={cancelEditing}>キャンセル</button>
 								<button class="btn btn-sm btn-primary" on:click={saveEditing}>保存する</button>
 							</div>
 						</div>
-						<!-- ▲▲▲ ここまでが変更箇所です ▲▲▲ -->
 					{:else}
 						<!-- 通常表示のUI -->
 						{#if message.speaker === 'user'}
@@ -298,6 +288,10 @@
 		visibility: visible;
 		transform: translateY(0);
 	}
+	.chat-start .floating-menu {
+		left: 1rem;
+		right: auto;
+	}
 	.menu-button {
 		display: flex;
 		align-items: center;
@@ -351,40 +345,5 @@
 		background-color: #1d4ed8;
 		border-color: #3b82f6;
 		color: white;
-	}
-    	.close-edit-button {
-		position: absolute;
-		top: 0.5rem;  /* 8px */
-		right: 0.5rem; /* 8px */
-		z-index: 10;   /* textareaの上に表示されるように */
-
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 1.5rem;  /* 24px */
-		height: 1.5rem; /* 24px */
-		border-radius: 9999px; /* 円形に */
-		background-color: #e5e7eb; /* gray-200 */
-		color: #4b5563; /* gray-600 */
-		border: none;
-		cursor: pointer;
-		transition: all 0.2s ease-in-out;
-	}
-	.close-edit-button:hover {
-		background-color: #d1d5db; /* gray-300 */
-		transform: scale(1.1);
-	}
-	.close-edit-button svg {
-		width: 1rem; /* 16px */
-		height: 1rem; /* 16px */
-	}
-
-	/* ユーザー側の吹き出し(青色)の閉じるボタンの配色を調整 */
-	.chat-bubble-primary .close-edit-button {
-		background-color: #1e40af; /* blue-800 */
-		color: #dbeafe; /* blue-100 */
-	}
-	.chat-bubble-primary .close-edit-button:hover {
-		background-color: #1d4ed8; /* blue-700 */
 	}
 </style>
