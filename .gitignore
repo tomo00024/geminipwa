@@ -4,7 +4,6 @@
 history
 .history
 
-
 # =================================================================
 # Dependencies & Lockfiles (npm, yarn, pnpm, bun)
 # 依存関係パッケージは `npm install` 等で復元するため含めない
