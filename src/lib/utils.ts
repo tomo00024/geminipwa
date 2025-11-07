@@ -39,19 +39,19 @@ export const geminiModelConfig = {
  * @returns 新しいSessionオブジェクト
  */
 export function createNewSession(): Session {
-    const now = new Date().toISOString();
-    return {
-        id: crypto.randomUUID(),
-        createdAt: now,
-        lastUpdatedAt: now,
-        logs: [],
-        viewMode: 'standard', 
-        featureSettings: {
-            apiMode: 'standard', // APIモードのデフォルト値を 'standard' に設定
-            goodwill: {
-                currentValue: 0,
-                thresholds: [] 
-            }
-        }
-    };
+	const now = new Date().toISOString();
+	return {
+		id: crypto.randomUUID(),
+		createdAt: now,
+		lastUpdatedAt: now,
+		logs: [],
+		viewMode: 'standard',
+		featureSettings: {
+			apiMode: 'standard', // APIモードのデフォルト値を 'standard' に設定
+			goodwill: {
+				currentValue: 0,
+				thresholds: []
+			}
+		}
+	};
 }
