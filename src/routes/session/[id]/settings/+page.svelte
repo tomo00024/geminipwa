@@ -46,11 +46,9 @@
 		sessions.update((allSessions) => {
 			const sessionToUpdate = allSessions.find((s) => s.id === $page.params.id);
 			if (sessionToUpdate) {
-				// viewModeが未定義なら'standard'を初期値とする
 				if (typeof sessionToUpdate.viewMode === 'undefined') {
 					sessionToUpdate.viewMode = 'standard';
 				}
-				// apiModeが未定義なら、旧プロパティ(goodwill.isEnabled)の状態を引き継いで初期値を決定する
 				if (typeof sessionToUpdate.featureSettings.apiMode === 'undefined') {
 					sessionToUpdate.featureSettings.apiMode = (
 						sessionToUpdate.featureSettings.goodwill as any
@@ -58,10 +56,31 @@
 						? 'oneStepFC'
 						: 'standard';
 				}
+				// ▼▼▼ [追加] gameViewSettingsのマイグレーション ▼▼▼
+				if (typeof sessionToUpdate.gameViewSettings === 'undefined') {
+					sessionToUpdate.gameViewSettings = {
+						imageBaseUrl: 'https://dashing-fenglisu-4c8446.netlify.app',
+						imageExtension: '.avif'
+					};
+				}
+				// ▲▲▲ 追加ここまで ▲▲▲
 			}
 			return allSessions;
 		});
 	});
+
+	// ▼▼▼ [追加] ゲーム風モード設定用の汎用イベントハンドラ ▼▼▼
+	function handleGameViewSettingChange(field: 'imageBaseUrl' | 'imageExtension', event: Event) {
+		const newValue = (event.target as HTMLInputElement).value;
+		sessions.update((allSessions) => {
+			const sessionToUpdate = allSessions.find((s) => s.id === $page.params.id);
+			if (sessionToUpdate?.gameViewSettings) {
+				sessionToUpdate.gameViewSettings[field] = newValue;
+				sessionToUpdate.lastUpdatedAt = new Date().toISOString();
+			}
+			return allSessions;
+		});
+	}
 
 	/**
 	 * 表示モード（標準/ゲーム風）のラジオボタンが変更された時に呼び出されるイベントハンドラ。
@@ -182,7 +201,6 @@
 	</div>
 
 	{#if $currentSession}
-		<!-- テンプレート内で何度も長い記述をしなくて済むように、変数を定義している -->
 		{@const goodwill = $currentSession.featureSettings.goodwill}
 		{@const apiMode = $currentSession.featureSettings.apiMode}
 
@@ -217,6 +235,37 @@
 						<span>ゲーム風モード</span>
 					</label>
 				</div>
+				{#if $currentSession.viewMode === 'game' && $currentSession.gameViewSettings}
+					<div class="mt-4 space-y-4 border-t pt-4">
+						<h3 class="font-medium">ゲーム風モード設定</h3>
+						<div>
+							<label for="image-base-url" class="mb-1 block text-sm text-gray-700"
+								>画像ベースURL</label
+							>
+							<input
+								id="image-base-url"
+								type="text"
+								class="input input-bordered w-full"
+								placeholder="https://..."
+								value={$currentSession.gameViewSettings.imageBaseUrl}
+								on:input={(e) => handleGameViewSettingChange('imageBaseUrl', e)}
+							/>
+						</div>
+						<div>
+							<label for="image-extension" class="mb-1 block text-sm text-gray-700"
+								>画像拡張子</label
+							>
+							<input
+								id="image-extension"
+								type="text"
+								class="input input-bordered w-full"
+								placeholder=".avif, .webp, .png など"
+								value={$currentSession.gameViewSettings.imageExtension}
+								on:input={(e) => handleGameViewSettingChange('imageExtension', e)}
+							/>
+						</div>
+					</div>
+				{/if}
 			</div>
 
 			<!-- 通常モードの枠 -->
@@ -236,7 +285,7 @@
 			<!-- OneStepFCモードの枠 -->
 			<div class="rounded-lg border p-4">
 				<label class="flex cursor-pointer items-center justify-between">
-					<h2 class="text-lg font-semibold">OneStepFCモード（非推奨・試験版）</h2>
+					<h2 class="text-lg font-semibold">構造化出力モード（非推奨・試験版）</h2>
 					<input
 						type="radio"
 						name="api-mode"
@@ -310,7 +359,7 @@
 			<div class="rounded-lg border p-4">
 				<label class="flex cursor-pointer items-center justify-between">
 					<div>
-						<h2 class="text-lg font-semibold">TwoStepFCモード（開発中）</h2>
+						<h2 class="text-lg font-semibold">Function Callingモード（開発中）</h2>
 						<p class="text-sm text-gray-600">より複雑な対話フローを実現するためのモードです。</p>
 					</div>
 					<input

@@ -5,17 +5,27 @@
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { onMount, onDestroy } from 'svelte';
+	import { processMessageIntoPages, type PageData } from '$lib/utils/messageProcessor';
 
+	// ----- Props (変更なし) -----
 	export let currentSession: Session;
 	export let isLoading: boolean;
 	export let userInput: string;
 	export let handleSubmit: () => Promise<void>;
 	export let base: string;
 
+	// ----- State Variables -----
+	// ▼▼▼ 変更点 1: URL変数を空の文字列で初期化 ▼▼▼
+	// 初期値はリアクティブブロックで設定されるため、ここでは安全な値で初期化するだけ。
+	let currentBackgroundUrl = '';
+	let currentCharacterUrl = '';
+	// ▲▲▲ 変更ここまで ▲▲▲
 	let currentPageIndex = 0;
 	let dialogWidth: number;
 	let measurementDiv: HTMLDivElement | null = null;
+	let messagePageData: PageData[] = [];
 
+	// ----- Lifecycle Methods (変更なし) -----
 	onMount(() => {
 		measurementDiv = document.createElement('div');
 		measurementDiv.classList.add('dialog-box');
@@ -32,103 +42,83 @@
 		}
 	});
 
+	// ----- Reactive Logic -----
+
+	// 最新のAIメッセージを取得 (変更なし)
 	$: latestAiMessage =
 		[...currentSession.logs].reverse().find((log) => log.speaker === 'ai')?.text || '......';
 
-	$: messagePages = (() => {
+	// ページデータを計算するブロック (変更なし)
+	$: messagePageData = (() => {
 		if (!measurementDiv || !latestAiMessage || !dialogWidth) {
-			return ['......'];
+			return [{ text: '......' }];
 		}
+
+		const computedStyle = window.getComputedStyle(measurementDiv);
+		const lineHeight = parseFloat(computedStyle.lineHeight) || 24;
+		const maxHeight = lineHeight * 3;
 
 		measurementDiv.style.width = `${dialogWidth}px`;
 
-		const computedStyle = window.getComputedStyle(measurementDiv);
-		const lineHeight = parseFloat(computedStyle.lineHeight);
-		if (isNaN(lineHeight)) {
-			return [latestAiMessage];
-		}
-		const maxHeight = lineHeight * 3;
+		const measureTextHeight = (text: string): number => {
+			if (!measurementDiv) return 0;
+			measurementDiv.innerText = text;
+			return measurementDiv.offsetHeight;
+		};
+		// ここでは `currentSession` を通常のプロパティとして正しく参照している
+		const imageBaseUrl =
+			currentSession.gameViewSettings?.imageBaseUrl ??
+			'https://dashing-fenglisu-4c8446.netlify.app';
+		const imageExtension = currentSession.gameViewSettings?.imageExtension ?? '.avif';
 
-		const paragraphs = latestAiMessage.trim().split(/\n\n+/);
-		const finalPages: string[] = [];
-
-		// ▼▼▼ [ここからが変更箇所] ▼▼▼
-		const primaryBreakChars = ['。', '！', '？'];
-		const trailingChars = ['。', '」', '）', '！', '？'];
-
-		for (const paragraph of paragraphs) {
-			const characters = paragraph.split('');
-			let currentPageContent = '';
-			let tempContent = '';
-
-			for (let i = 0; i < characters.length; i++) {
-				tempContent += characters[i];
-				measurementDiv.innerText = tempContent;
-
-				if (measurementDiv.offsetHeight > maxHeight) {
-					// --- 3行を超えたので、最適な分割点を探す ---
-					let bestSplitIndex = -1;
-
-					// 1. 後方検索: オーバーフロー直前のテキストの末尾から前に向かって、最適な区切り文字を探す
-					for (let j = currentPageContent.length - 1; j >= 0; j--) {
-						const char = currentPageContent[j];
-
-						// 優先区切り文字かチェック
-						if (primaryBreakChars.includes(char)) {
-							// 2. 妥当性チェック: その地点で括弧が閉じてるか確認
-							const substringToCheck = currentPageContent.substring(0, j + 1);
-							const openKakko = (substringToCheck.match(/「/g) || []).length;
-							const closeKakko = (substringToCheck.match(/」/g) || []).length;
-							const openMaruKakko = (substringToCheck.match(/（/g) || []).length;
-							const closeMaruKakko = (substringToCheck.match(/）/g) || []).length;
-
-							if (openKakko <= closeKakko && openMaruKakko <= closeMaruKakko) {
-								// 括弧が閉じていれば、ここを最適な分割点とする
-								bestSplitIndex = j;
-								break; // 最適な点が見つかったのでループを抜ける
-							}
-						}
-					}
-
-					// 3. 分割処理
-					if (bestSplitIndex !== -1) {
-						// 3a. 句読点が見つかった場合
-						// さらに後ろに続く句読点を全て含める
-						let finalSplitIndex = bestSplitIndex;
-						for (let j = bestSplitIndex + 1; j < currentPageContent.length; j++) {
-							if (trailingChars.includes(currentPageContent[j])) {
-								finalSplitIndex = j;
-							} else {
-								break;
-							}
-						}
-
-						const pageText = currentPageContent.substring(0, finalSplitIndex + 1);
-						const remainingText = currentPageContent.substring(finalSplitIndex + 1);
-						finalPages.push(pageText);
-						tempContent = remainingText + characters[i];
-					} else {
-						// 3b. 句読点が見つからなかった場合 (フォールバック)
-						finalPages.push(currentPageContent);
-						tempContent = characters[i];
-					}
-				}
-				currentPageContent = tempContent;
-			}
-
-			if (currentPageContent) {
-				finalPages.push(currentPageContent);
-			}
-		}
-		// ▲▲▲ [ここまでが変更箇所] ▲▲▲
-
-		return finalPages.length > 0 ? finalPages : [''];
+		return processMessageIntoPages(latestAiMessage, {
+			maxHeight: maxHeight,
+			measureTextHeight: measureTextHeight,
+			imageBaseUrl: imageBaseUrl,
+			imageExtension: imageExtension
+		});
 	})();
 
-	$: if (latestAiMessage) {
+	// ▼▼▼ 変更点 2: URLを更新するロジックを1つのリアクティブブロックに統合 ▼▼▼
+	// このブロックは `latestAiMessage` (とそれに依存する`messagePageData`) が変更された時に実行される
+	$: if (latestAiMessage && messagePageData.length > 0) {
+		// ページインデックスをリセット
 		currentPageIndex = 0;
+
+		// セッションで定義されたデフォルトのURLを計算
+		const defaultBaseUrl =
+			currentSession.gameViewSettings?.imageBaseUrl ??
+			'https://dashing-fenglisu-4c8446.netlify.app';
+		const defaultExtension = currentSession.gameViewSettings?.imageExtension ?? '.avif';
+		const defaultBgUrl = `${defaultBaseUrl}/テスト/背景${defaultExtension}`;
+		const defaultCharUrl = `${defaultBaseUrl}/テスト/人物${defaultExtension}`;
+
+		// **最初のページ (index: 0) の画像** を設定する
+		// ページ0にコマンドがあればそれを使い、なければセッションのデフォルト値を使う
+		currentBackgroundUrl = messagePageData[0]?.backgroundUrl || defaultBgUrl;
+		currentCharacterUrl = messagePageData[0]?.characterUrl || defaultCharUrl;
 	}
 
+	// ▼▼▼ 変更点 2: 「ページ送り時」の処理を分離 ▼▼▼
+	// このブロックは `currentPageIndex` が変更された時にのみ実行される
+	$: if (currentPageIndex > 0 && messagePageData[currentPageIndex]) {
+		const pageData = messagePageData[currentPageIndex];
+
+		// このページに背景コマンドがあれば、URLを更新する
+		// **なければ何もしない（= 直前のページの画像が維持される）**
+		if (pageData.backgroundUrl) {
+			currentBackgroundUrl = pageData.backgroundUrl;
+		}
+
+		// このページに人物コマンドがあれば、URLを更新する
+		if (pageData.characterUrl) {
+			currentCharacterUrl = pageData.characterUrl;
+		}
+	}
+	// ▲▲▲ 変更ここまで ▲▲▲
+
+	// 算出プロパティとイベントハンドラ (変更なし)
+	$: messagePages = messagePageData.map((p) => p.text);
 	$: hasMorePages = currentPageIndex < messagePages.length - 1;
 
 	function handleNextPage() {
@@ -138,9 +128,9 @@
 	}
 </script>
 
-<!-- HTMLの部分 (変更なし) -->
+<!-- HTMLの部分は一切変更ありません -->
 <div class="flex h-[100dvh] flex-col bg-gray-800 text-white">
-	<!-- Part 1: ヘッダー部分 -->
+	<!-- ヘッダー部分 -->
 	<div class="flex-shrink-0 p-4">
 		<div class="flex items-center justify-between">
 			<a
@@ -175,12 +165,12 @@
 		on:keydown={(e) => e.key === 'Enter' && handleNextPage()}
 	>
 		<img
-			src="https://dashing-fenglisu-4c8446.netlify.app/テスト/背景.avif"
+			src={currentBackgroundUrl}
 			alt="背景"
 			class="absolute inset-0 z-10 h-full w-full object-cover"
 		/>
 		<img
-			src="https://dashing-fenglisu-4c8446.netlify.app/テスト/人物.avif"
+			src={currentCharacterUrl}
 			alt="人物"
 			class="absolute bottom-0 left-1/2 z-20 h-5/6 max-w-full -translate-x-1/2 object-contain"
 		/>
