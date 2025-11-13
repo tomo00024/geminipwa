@@ -1,3 +1,5 @@
+<!-- src/routes/session/[id]/settings/+page.svelte -->
+
 <script lang="ts">
 	/**
 	 * @file このファイルは、特定のセッション（:idで指定）に関する設定ページを定義します。
@@ -14,8 +16,9 @@
 	import GameModeSettings from '$lib/components/settings/GameModeSettings.svelte';
 	import StructuredOutputSettings from '$lib/components/settings/StructuredOutputSettings.svelte';
 	import FunctionCallingSettings from '$lib/components/settings/FunctionCallingSettings.svelte';
-	import StatusSettings from '$lib/components/settings/StatusSettings.svelte'; // インポート
+	import StatusSettings from '$lib/components/settings/StatusSettings.svelte';
 	import TriggerSettings from '$lib/components/settings/TriggerSettings.svelte';
+	import ImportExportSettings from '$lib/components/settings/ImportExportSettings.svelte';
 
 	const sessionId = derived(page, ($page) => $page.params.id);
 	const currentSession = derived([sessions, sessionId], ([$sessions, $sessionId]) =>
@@ -140,6 +143,7 @@
 
 	{#if $currentSession}
 		<div class="space-y-6">
+			<ImportExportSettings />
 			<!-- モード選択 -->
 			<StandardMode {currentSession} onModeChange={handleSessionModeChange} />
 			<GameModeSettings {currentSession} onModeChange={handleSessionModeChange} />

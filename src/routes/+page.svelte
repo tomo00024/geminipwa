@@ -10,14 +10,20 @@
 	 * 「新しいセッションを開始」ボタンがクリックされたときに実行される関数
 	 */
 	function handleNewSession(): void {
-		// 複雑なオブジェクト作成ロジックを、ヘルパー関数の呼び出しに置き換え ★★★
 		const newSession = createNewSession();
-
-		// sessionsストアを更新する
 		sessions.update((currentSessions) => [...currentSessions, newSession]);
-
-		// 新しく作成したセッションの対話画面へ遷移
 		goto(`${base}/session/${newSession.id}`);
+	}
+
+	/**
+	 * 指定されたIDのセッションを削除する関数
+	 * @param id 削除するセッションのID
+	 */
+	function handleDeleteSession(id: string): void {
+		if (!confirm('このセッションを削除しますか？この操作は取り消せません。')) {
+			return;
+		}
+		sessions.update((currentSessions) => currentSessions.filter((session) => session.id !== id));
 	}
 </script>
 
@@ -46,16 +52,22 @@
 		</p>
 	{:else}
 		<ul class="space-y-3">
+			<!-- ▼▼▼【変更】ここから下の #each ブロック内を修正 ▼▼▼ -->
 			{#each [...$sessions].reverse() as session (session.id)}
-				<li>
-					<a
-						href="{base}/session/{session.id}"
-						class="block rounded-lg bg-white p-4 shadow transition-colors hover:bg-gray-100"
-					>
+				<li class="flex items-center justify-between rounded-lg bg-white p-4 shadow">
+					<a href="{base}/session/{session.id}" class="flex-grow">
 						<div class="text-sm text-gray-600">
 							最終更新: {new Date(session.lastUpdatedAt).toLocaleString('ja-JP')}
 						</div>
+						<!-- (将来的にタイトルなどを表示する場合はここに追加) -->
 					</a>
+					<button
+						on:click={() => handleDeleteSession(session.id)}
+						class="flex-shrink-0 rounded bg-red-200 px-3 py-2 text-sm font-semibold text-red-800 hover:bg-red-300"
+						title="このセッションを削除"
+					>
+						削除
+					</button>
 				</li>
 			{/each}
 		</ul>

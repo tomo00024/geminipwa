@@ -1,3 +1,5 @@
+<!-- src/lib/components/settings/TriggerSettings.svelte -->
+
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { sessions } from '$lib/stores';
@@ -150,7 +152,7 @@
 					<div class="flex items-center justify-between">
 						<h4 class="font-semibold">トリガー</h4>
 						<button
-							class="btn btn-sm btn-circle btn-ghost"
+							class="rounded bg-gray-200 px-2 py-1 text-sm font-semibold text-gray-800 hover:bg-gray-300"
 							on:click={() => removeTrigger(trigger.id)}
 							aria-label="Remove trigger"
 						>
@@ -198,6 +200,7 @@
 													e.currentTarget.value
 												)}
 										>
+											<option value="==">== (等しい)</option>
 											<option value=">=">&gt;= (以上)</option>
 											<option value=">">&gt; (超える)</option>
 											<option value="<=">&lt;= (以下)</option>
@@ -217,13 +220,14 @@
 													e.currentTarget.value
 												)}
 										/>
-										<!-- 条件削除ボタン -->
+										<!-- 条件削除ボタン (修正箇所) -->
 										{#if trigger.conditions.length > 1}
 											<button
-												class="btn btn-xs btn-circle btn-ghost"
+												class="rounded bg-gray-200 px-2 py-1 text-sm font-semibold text-gray-800 hover:bg-gray-300"
 												on:click={() => removeCondition(trigger, condition.id)}
+												aria-label="Remove condition"
 											>
-												-
+												✕
 											</button>
 										{/if}
 									</div>
@@ -250,7 +254,7 @@
 							{/each}
 						</div>
 						<button
-							class="btn btn-xs btn-outline btn-primary mt-2"
+							class="mt-2 rounded bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-800 hover:bg-gray-300"
 							on:click={() => addCondition(trigger)}
 						>
 							+ 条件を追加
@@ -285,7 +289,10 @@
 		{/if}
 	</div>
 
-	<button class="btn btn-sm btn-outline btn-primary mt-3" on:click={addTrigger}>
+	<button
+		class="mt-3 rounded bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300"
+		on:click={addTrigger}
+	>
 		+ トリガーを追加
 	</button>
 </div>

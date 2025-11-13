@@ -114,7 +114,7 @@
 							on:input={(e) => handleCustomStatusChange(status.id, 'currentValue', e)}
 						/>
 						<button
-							class="btn btn-sm btn-circle btn-ghost"
+							class="rounded bg-gray-200 px-2 py-1 text-sm font-semibold text-gray-800 hover:bg-gray-300"
 							on:click={() => removeCustomStatus(status.id)}
 							aria-label="Remove status {status.name}"
 						>
@@ -163,7 +163,10 @@
 				{/each}
 			{/if}
 		</div>
-		<button class="btn btn-sm btn-outline btn-primary mt-3" on:click={addCustomStatus}>
+		<button
+			class="mt-3 rounded bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300"
+			on:click={addCustomStatus}
+		>
 			+ ステータスを追加
 		</button>
 	</div>

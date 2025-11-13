@@ -1,4 +1,4 @@
-//src/lib/utils/messageProcessor.ts
+// src/lib/utils/messageProcessor.ts
 
 /**
  * ページごとのデータを表現する型定義
@@ -7,6 +7,7 @@ export type PageData = {
 	text: string;
 	backgroundUrl?: string;
 	characterUrl?: string;
+	ichimaiEUrl?: string; // ★ 一枚絵のURLプロパティを追加
 };
 
 /**
@@ -41,7 +42,8 @@ export function processMessageIntoPages(
 	const finalPages: PageData[] = [];
 	const commandRegex = /({{\s*[^:]+?\s*:\s*.+?\s*}})/g;
 
-	let pendingCommands: { bg?: string; char?: string } = {};
+	// ★ 'ie' (一枚絵) を一時保存するプロパティを追加
+	let pendingCommands: { bg?: string; char?: string; ie?: string } = {};
 	const statusUpdates: Record<string, string> = {};
 
 	const pushPage = (text: string) => {
@@ -51,8 +53,10 @@ export function processMessageIntoPages(
 		finalPages.push({
 			text: text,
 			backgroundUrl: pendingCommands.bg,
-			characterUrl: pendingCommands.char
+			characterUrl: pendingCommands.char,
+			ichimaiEUrl: pendingCommands.ie // ★ ページデータに一枚絵のURLをセット
 		});
+		// ページを確定したら、そのページに紐づく画像コマンドはクリアする
 		pendingCommands = {};
 	};
 
@@ -72,7 +76,9 @@ export function processMessageIntoPages(
 					const [, typeStr, valueStr] = match;
 					const type = typeStr.trim();
 					const value = valueStr.trim();
-					if (type === '背景' || type === '人物') {
+
+					// ★ 「一枚絵」コマンドの解析ロジックを追加
+					if (type === '背景' || type === '人物' || type === '一枚絵') {
 						const path = value
 							.split('|')
 							.map((p) => encodeURIComponent(p.trim()))
@@ -81,15 +87,16 @@ export function processMessageIntoPages(
 						const finalUrl = `${imageBaseUrl}/${path}${ext}`;
 						if (type === '背景') pendingCommands.bg = finalUrl;
 						else if (type === '人物') pendingCommands.char = finalUrl;
+						else if (type === '一枚絵') pendingCommands.ie = finalUrl; // ★ 一枚絵URLを一時保存
 					} else {
-						// 「背景」「人物」以外はすべてステータス更新として扱う
+						// 上記以外はすべてステータス更新として扱う
 						statusUpdates[type] = value;
 					}
 				}
 				continue;
 			}
 
-			// テキストのページ分割処理
+			// テキストのページ分割処理 (変更なし)
 			const characters = part.split('');
 			for (let i = 0; i < characters.length; i++) {
 				tempContent += characters[i];
@@ -137,15 +144,20 @@ export function processMessageIntoPages(
 		}
 	}
 
-	if ((pendingCommands.bg || pendingCommands.char) && finalPages.length > 0) {
+	if ((pendingCommands.bg || pendingCommands.char || pendingCommands.ie) && finalPages.length > 0) {
 		const lastPage = finalPages[finalPages.length - 1];
 		if (!lastPage.backgroundUrl) lastPage.backgroundUrl = pendingCommands.bg;
 		if (!lastPage.characterUrl) lastPage.characterUrl = pendingCommands.char;
-	} else if ((pendingCommands.bg || pendingCommands.char) && finalPages.length === 0) {
+		if (!lastPage.ichimaiEUrl) lastPage.ichimaiEUrl = pendingCommands.ie;
+	} else if (
+		(pendingCommands.bg || pendingCommands.char || pendingCommands.ie) &&
+		finalPages.length === 0
+	) {
 		finalPages.push({
 			text: '',
 			backgroundUrl: pendingCommands.bg,
-			characterUrl: pendingCommands.char
+			characterUrl: pendingCommands.char,
+			ichimaiEUrl: pendingCommands.ie
 		});
 	}
 

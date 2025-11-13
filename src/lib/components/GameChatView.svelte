@@ -1,7 +1,7 @@
 <!-- src/lib/components/GameChatView.svelte -->
 
 <script lang="ts">
-	import type { Session } from '$lib/types';
+	import type { Session, ImageSizingSetting } from '$lib/types';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { onMount, onDestroy } from 'svelte';
@@ -10,6 +10,7 @@
 		type PageData,
 		type ProcessedMessage
 	} from '$lib/utils/messageProcessor';
+	import { defaultGameViewSettings } from '$lib/utils';
 
 	export let currentSession: Session;
 	export let isLoading: boolean;
@@ -17,12 +18,78 @@
 	export let handleSubmit: () => Promise<void>;
 	export let base: string;
 
+	// --- 状態変数 ---
 	let currentBackgroundUrl = '';
 	let currentCharacterUrl = '';
+	let currentIchimaiEUrl = '';
+	let isWaitingForFirstImageCommand = false;
+
 	let currentPageIndex = 0;
 	let dialogWidth: number;
 	let measurementDiv: HTMLDivElement | null = null;
 	let processedMessage: ProcessedMessage;
+
+	// セッションの設定を取得し、ない場合はインポートしたデフォルト値を使用
+	$: sizingSettings = currentSession.gameViewSettings?.sizing ?? defaultGameViewSettings.sizing!;
+
+	/**
+	 * サイジング設定からCSSのclassとstyle属性を生成する関数
+	 * @param sizing - 個別の画像（背景・人物・一枚絵）のサイジング設定
+	 * @param target - 画像の種類
+	 */
+	function getAttrs(
+		sizing: ImageSizingSetting | undefined,
+		target: 'background' | 'character' | 'ichimaiE'
+	) {
+		const s = sizing ?? defaultGameViewSettings.sizing![target];
+		let style = '';
+
+		// ▼▼▼【ここが修正点】▼▼▼
+		// 'max-w-none' と 'max-h-none' を追加し、フレームワークによる
+		// 暗黙的なサイズ制限(max-width: 100%など)を無効化します。
+		// これにより、画像の比率が崩れることを防ぎます。
+		let cssClass = 'absolute max-w-none max-h-none';
+		// ▲▲▲【修正ここまで】▲▲▲
+
+		switch (s.mode) {
+			case 'fit-width':
+				// 横幅をコンテナに合わせ、高さはアスペクト比を維持して自動調整 (上下にはみ出すことを許容)
+				cssClass += ' w-full h-auto';
+				break;
+			case 'fit-height':
+				// 高さをコンテナに合わせ、横幅はアスペクト比を維持して自動調整 (左右にはみ出すことを許容)
+				cssClass += target === 'character' ? ' h-5/6 w-auto' : ' h-full w-auto';
+				break;
+			case 'scale':
+				// コンテナサイズを無視し、元画像サイズを基準に拡大・縮小
+				cssClass += ' w-auto h-auto'; // 元画像のサイズを維持
+				const scaleValue = (s.scale || 100) / 100;
+				style = `transform: scale(${scaleValue});`;
+				break;
+		}
+
+		// 拡大・縮小の基準点を設定
+		if (target === 'character') {
+			style += ' transform-origin: bottom center;';
+		} else {
+			style += ' transform-origin: center;';
+		}
+
+		// 位置決めのクラスを追加
+		if (target === 'character') {
+			// 人物: 画面下部、水平中央
+			cssClass += ' bottom-0 left-1/2 -translate-x-1/2';
+		} else {
+			// 背景・一枚絵: コンテナ内で中央揃え
+			cssClass += ' top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2';
+		}
+
+		return { style, class: cssClass };
+	}
+
+	$: bgAttrs = getAttrs(sizingSettings.background, 'background');
+	$: charAttrs = getAttrs(sizingSettings.character, 'character');
+	$: ieAttrs = getAttrs(sizingSettings.ichimaiE, 'ichimaiE');
 
 	onMount(() => {
 		measurementDiv = document.createElement('div');
@@ -32,6 +99,11 @@
 		measurementDiv.style.left = '-9999px';
 		measurementDiv.style.top = '-9999px';
 		document.body.appendChild(measurementDiv);
+
+		const baseUrl =
+			currentSession.gameViewSettings?.imageBaseUrl ?? defaultGameViewSettings.imageBaseUrl;
+		const extension =
+			currentSession.gameViewSettings?.imageExtension ?? defaultGameViewSettings.imageExtension;
 	});
 
 	onDestroy(() => {
@@ -43,12 +115,10 @@
 	$: latestAiMessage =
 		[...currentSession.logs].reverse().find((log) => log.speaker === 'ai')?.text || '......';
 
-	// AIのメッセージが変更されたら、ページ分割とメタデータ抽出を再実行
 	$: processedMessage = (() => {
 		if (!measurementDiv || !latestAiMessage || !dialogWidth) {
 			return { pages: [{ text: '......' }], statusUpdates: {} };
 		}
-
 		const computedStyle = window.getComputedStyle(measurementDiv);
 		const lineHeight = parseFloat(computedStyle.lineHeight) || 24;
 		const maxHeight = lineHeight * 3;
@@ -62,9 +132,9 @@
 		};
 
 		const imageBaseUrl =
-			currentSession.gameViewSettings?.imageBaseUrl ??
-			'https://dashing-fenglisu-4c8446.netlify.app';
-		const imageExtension = currentSession.gameViewSettings?.imageExtension ?? '.avif';
+			currentSession.gameViewSettings?.imageBaseUrl ?? defaultGameViewSettings.imageBaseUrl;
+		const imageExtension =
+			currentSession.gameViewSettings?.imageExtension ?? defaultGameViewSettings.imageExtension;
 
 		return processMessageIntoPages(latestAiMessage, {
 			maxHeight: maxHeight,
@@ -74,38 +144,40 @@
 		});
 	})();
 
-	// processedMessageから各データを抽出する
 	$: messagePageData = processedMessage.pages;
-
-	// 画像URLを更新するロジック
-	$: if (latestAiMessage && messagePageData.length > 0) {
-		currentPageIndex = 0;
-
-		const defaultBaseUrl =
-			currentSession.gameViewSettings?.imageBaseUrl ??
-			'https://dashing-fenglisu-4c8446.netlify.app';
-		const defaultExtension = currentSession.gameViewSettings?.imageExtension ?? '.avif';
-		const defaultBgUrl = `${defaultBaseUrl}/テスト/背景${defaultExtension}`;
-		const defaultCharUrl = `${defaultBaseUrl}/テスト/人物${defaultExtension}`;
-
-		currentBackgroundUrl = messagePageData[0]?.backgroundUrl || defaultBgUrl;
-		currentCharacterUrl = messagePageData[0]?.characterUrl || defaultCharUrl;
-	}
-
-	// ページ送り時の画像更新ロジック
-	$: if (currentPageIndex > 0 && messagePageData[currentPageIndex]) {
-		const pageData = messagePageData[currentPageIndex];
-		if (pageData.backgroundUrl) {
-			currentBackgroundUrl = pageData.backgroundUrl;
-		}
-		if (pageData.characterUrl) {
-			currentCharacterUrl = pageData.characterUrl;
-		}
-	}
-
-	// 算出プロパティとイベントハンドラ
 	$: messagePages = messagePageData.map((p) => p.text);
 	$: hasMorePages = currentPageIndex < messagePages.length - 1;
+
+	$: if (latestAiMessage) {
+		isWaitingForFirstImageCommand = true;
+		currentPageIndex = 0;
+	}
+
+	$: if (messagePageData && messagePageData[currentPageIndex]) {
+		const pageData = messagePageData[currentPageIndex];
+
+		const hasBgCmd = !!pageData.backgroundUrl;
+		const hasCharCmd = !!pageData.characterUrl;
+		const hasIeCmd = !!pageData.ichimaiEUrl;
+		const hasAnyImageCommand = hasBgCmd || hasCharCmd || hasIeCmd;
+
+		if (isWaitingForFirstImageCommand && hasAnyImageCommand) {
+			isWaitingForFirstImageCommand = false;
+			if (!hasIeCmd) {
+				currentIchimaiEUrl = '';
+			}
+		}
+
+		if (hasIeCmd) {
+			currentIchimaiEUrl = pageData.ichimaiEUrl!;
+		}
+		if (hasBgCmd) {
+			currentBackgroundUrl = pageData.backgroundUrl!;
+		}
+		if (hasCharCmd) {
+			currentCharacterUrl = pageData.characterUrl!;
+		}
+	}
 
 	function handleNextPage() {
 		if (hasMorePages) {
@@ -113,6 +185,8 @@
 		}
 	}
 </script>
+
+<!-- (HTMLマークアップとスタイル部分は変更なし) -->
 
 <div class="flex h-[100dvh] flex-col bg-gray-800 text-white">
 	<!-- ヘッダー部分 -->
@@ -163,16 +237,24 @@
 		on:click={handleNextPage}
 		on:keydown={(e) => e.key === 'Enter' && handleNextPage()}
 	>
-		<img
-			src={currentBackgroundUrl}
-			alt="背景"
-			class="absolute inset-0 z-10 h-full w-full object-cover"
-		/>
+		<!-- 背景 (z-10) -->
+		<img src={currentBackgroundUrl} alt="背景" class="z-10 {bgAttrs.class}" style={bgAttrs.style} />
+		<!-- 人物 (z-20) -->
 		<img
 			src={currentCharacterUrl}
 			alt="人物"
-			class="absolute bottom-0 left-1/2 z-20 h-5/6 max-w-full -translate-x-1/2 object-contain"
+			class="z-20 {charAttrs.class}"
+			style={charAttrs.style}
 		/>
+		<!-- 一枚絵 (z-30) -->
+		{#if currentIchimaiEUrl}
+			<img
+				src={currentIchimaiEUrl}
+				alt="一枚絵"
+				class="z-30 {ieAttrs.class}"
+				style={ieAttrs.style}
+			/>
+		{/if}
 	</div>
 
 	<!-- Part 3: ダイアログと入力フォーム -->

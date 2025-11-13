@@ -1,6 +1,8 @@
+// src/lib/types.ts
 // ===================================================================
 // 1. 各機能が使用する、固有の設定とデータの型を定義する
 // ===================================================================
+// ▲▲▲【変更なし】ここから下の内容は変更ありません
 
 /**
  * 好感度機能 (Function Calling) の設定とデータ
@@ -43,7 +45,7 @@ export interface CustomStatus {
 export interface TriggerCondition {
 	id: string; // 条件の一意なID
 	statusId: string; // どのステータスを参照するか (CustomStatusのidや固定値)
-	operator: '>=' | '>' | '<=' | '<';
+	operator: '==' | '>=' | '>' | '<=' | '<';
 	value: number;
 }
 
@@ -65,9 +67,21 @@ export interface Trigger {
 // 2. すべての機能別データを格納する、拡張可能なコンテナを定義する
 // ===================================================================
 
+/**
+ * 画像のサイジング設定の型
+ */
+export interface ImageSizingSetting {
+	mode: 'scale' | 'fit-height' | 'fit-width'; // モード: 倍率指定 | 縦に合わせる | 横に合わせる
+	scale: number; // 'scale' モードの時の倍率 (単位: %)
+}
 export interface GameViewSettings {
 	imageBaseUrl: string;
 	imageExtension: string;
+	sizing?: {
+		background: ImageSizingSetting;
+		character: ImageSizingSetting;
+		ichimaiE: ImageSizingSetting;
+	};
 }
 
 export interface FeatureSettings {
@@ -79,8 +93,15 @@ export interface FeatureSettings {
 // ===================================================================
 // 3. コアとなるSessionインターフェースを定義する
 // ===================================================================
+export interface ApiKey {
+	id: string;
+	name: string;
+	key: string;
+}
+
 export interface AppSettings {
-	apiKey: string;
+	apiKeys: ApiKey[];
+	activeApiKeyId: string | null;
 	model: string;
 	systemPrompt: {
 		isEnabled: boolean;
@@ -92,6 +113,23 @@ export interface AppSettings {
 	};
 }
 
+/**
+ * 会話内の単一のメッセージを表す。
+ * 全てのメッセージは親子関係を持ち、フラットな配列で管理される。
+ */
+export interface Log {
+	id: string; // 全メッセージで一意なID
+	speaker: 'user' | 'ai';
+	text: string;
+	timestamp: string;
+	parentId: string | null; // 親メッセージのID。会話の始点はnull
+	/**
+	 * このメッセージから複数の子メッセージ（分岐）が続く場合に、
+	 * 現在アクティブな子のIDを保持する。
+	 */
+	activeChildId: string | null;
+}
+
 export interface Session {
 	id: string;
 	createdAt: string;
@@ -101,11 +139,10 @@ export interface Session {
 	gameViewSettings?: GameViewSettings;
 	customStatuses?: CustomStatus[];
 	triggers?: Trigger[];
-	logs: {
-		speaker: 'user' | 'ai';
-		text: string;
-		timestamp: string;
-	}[];
+	/**
+	 * @description 会話ログの構造をLogのフラットな配列に変更
+	 */
+	logs: Log[];
 }
 
 // ===================================================================

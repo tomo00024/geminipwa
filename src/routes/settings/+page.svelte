@@ -5,6 +5,8 @@
 	import { page } from '$app/stores';
 	import { derived } from 'svelte/store';
 	import { availableModels } from '$lib/utils';
+	import type { ApiKey } from '$lib/types';
+	import { generateUUID } from '$lib/utils';
 
 	const returnPath = derived(page, ($page) => {
 		const from = $page.url.searchParams.get('from');
@@ -19,6 +21,44 @@
 			label: '履歴に戻る'
 		};
 	});
+
+	/**
+	 * 新しいAPIキー項目をリストに追加します。
+	 * デフォルトの名前として、現在のキー数に基づいた連番を振ります。
+	 */
+	function addApiKey() {
+		appSettings.update((settings) => {
+			const nextNumber = (settings.apiKeys?.length || 0) + 1;
+			const newKey: ApiKey = {
+				id: generateUUID(),
+				name: nextNumber.toString(),
+				key: ''
+			};
+
+			settings.apiKeys = [...(settings.apiKeys || []), newKey];
+
+			if (settings.apiKeys.length === 1) {
+				settings.activeApiKeyId = newKey.id;
+			}
+			return settings;
+		});
+	}
+
+	/**
+	 * 指定されたIDのAPIキーをリストから削除します。
+	 */
+	function deleteApiKey(id: string) {
+		if (!confirm('このAPIキーを削除しますか？')) return;
+
+		appSettings.update((settings) => {
+			settings.apiKeys = settings.apiKeys.filter((key) => key.id !== id);
+			// アクティブなキーが削除された場合、選択を解除するか、残りの最初のキーをアクティブにする
+			if (settings.activeApiKeyId === id) {
+				settings.activeApiKeyId = settings.apiKeys[0]?.id || null;
+			}
+			return settings;
+		});
+	}
 </script>
 
 <div class="flex h-screen flex-col p-4">
@@ -34,17 +74,64 @@
 
 	<div class="space-y-6">
 		<!-- APIキー設定 -->
-		<div class="space-y-2">
-			<label for="api-key" class="block font-medium">API Key</label>
-			<input
-				id="api-key"
-				type="password"
-				bind:value={$appSettings.apiKey}
-				class="w-full max-w-md rounded border p-2"
-				placeholder="sk-..."
-			/>
+		<div class="space-y-3">
+			<h2 class="block text-lg font-medium">API Key</h2>
+
+			<div class="space-y-2">
+				{#if $appSettings.apiKeys?.length > 0}
+					{#each $appSettings.apiKeys as apiKey, index (apiKey.id)}
+						<div class="grid grid-cols-[auto_1fr_2fr_auto] items-center gap-x-3 rounded border p-2">
+							<!-- 選択ラジオボタン -->
+							<input
+								type="radio"
+								id={`key-select-${apiKey.id}`}
+								name="api-key-select"
+								class="h-4 w-4"
+								bind:group={$appSettings.activeApiKeyId}
+								value={apiKey.id}
+								title="このキーをチャットで使用する"
+							/>
+							<!-- 名前入力欄 -->
+							<input
+								type="text"
+								bind:value={apiKey.name}
+								class="w-full rounded border p-2 text-sm"
+								placeholder={`キー ${index + 1} の名前`}
+							/>
+							<!-- キー入力欄 -->
+							<input
+								type="password"
+								bind:value={apiKey.key}
+								class="w-full rounded border p-2 text-sm"
+								placeholder="sk-..."
+							/>
+							<!-- 削除ボタン -->
+							<button
+								on:click={() => deleteApiKey(apiKey.id)}
+								class="flex-shrink-0 rounded bg-red-200 px-3 py-2 text-sm font-semibold text-red-800 hover:bg-red-300"
+								title="このキーを削除する"
+							>
+								削除
+							</button>
+						</div>
+					{/each}
+				{:else}
+					<p class="px-2 text-sm text-gray-500">
+						保存されているAPIキーはありません。「+ APIを追加」ボタンで追加してください。
+					</p>
+				{/if}
+			</div>
+
+			<!-- 追加ボタン -->
+			<button
+				class="rounded bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300"
+				on:click={addApiKey}
+			>
+				+ APIを追加
+			</button>
+
 			<p class="text-sm text-gray-600">
-				APIキーはブラウザ内にのみ保存されます。入力すると自動的に保存されます。
+				APIキーはブラウザ内にのみ保存されます。入力や変更は自動的に保存されます。
 			</p>
 		</div>
 

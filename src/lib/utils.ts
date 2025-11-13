@@ -1,6 +1,6 @@
-//src/lib/utils.ts
+// src/lib/utils.ts
 
-import type { Session } from './types';
+import type { Session, GameViewSettings } from './types';
 
 // ===================================================================
 // LLMモデル関連の共通設定
@@ -35,8 +35,38 @@ export const geminiModelConfig = {
 };
 
 // ===================================================================
+// ▼▼▼【ここから追加】デフォルト設定値
+// ===================================================================
+
+/**
+ * ゲームビュー設定のデフォルト値
+ */
+export const defaultGameViewSettings: GameViewSettings = {
+	imageBaseUrl: 'https://dashing-fenglisu-4c8446.netlify.app',
+	imageExtension: '.avif',
+	sizing: {
+		background: { mode: 'fit-width', scale: 100 },
+		character: { mode: 'fit-height', scale: 80 },
+		ichimaiE: { mode: 'fit-width', scale: 100 }
+	}
+};
+
+// ===================================================================
 // セッション関連のヘルパー関数
 // ===================================================================
+
+/**
+ * ▼▼▼【追加】安全なUUID生成関数▼▼▼
+ * crypto.randomUUIDが使えない環境でも簡易的なIDを生成する
+ * @returns {string} UUID
+ */
+export function generateUUID(): string {
+	if (crypto && crypto.randomUUID) {
+		return crypto.randomUUID();
+	}
+	// フォールバック: タイムスタンプと乱数を組み合わせた簡易ID
+	return `${Date.now()}-${Math.floor(Math.random() * 1e9).toString(36)}`;
+}
 
 /**
  * 新しいセッションのデフォルトオブジェクトを生成して返す関数
@@ -45,11 +75,13 @@ export const geminiModelConfig = {
 export function createNewSession(): Session {
 	const now = new Date().toISOString();
 	return {
-		id: crypto.randomUUID(),
+		// ▼▼▼【変更】安全なUUID生成関数を呼び出すように修正 ▼▼▼
+		id: generateUUID(),
 		createdAt: now,
 		lastUpdatedAt: now,
 		logs: [],
 		viewMode: 'standard',
+		gameViewSettings: { ...defaultGameViewSettings },
 		featureSettings: {
 			apiMode: 'standard',
 			goodwill: {

@@ -8,9 +8,10 @@ import { availableModels } from './utils';
 const APP_SETTINGS_KEY = 'app_settings';
 const SESSIONS_KEY = 'sessions';
 
-// 1. デフォルトのアプリケーション設定を定義する
+// 1. デフォルトのアプリケーション設定を定義する (APIキーの複数管理に対応)
 const defaultAppSettings: AppSettings = {
-	apiKey: '',
+	apiKeys: [],
+	activeApiKeyId: null,
 	model: availableModels[0],
 	systemPrompt: {
 		isEnabled: false,
@@ -25,29 +26,15 @@ const defaultAppSettings: AppSettings = {
 // 2. localStorageから初期値を読み込む
 const storedAppSettingsJSON = browser ? localStorage.getItem(APP_SETTINGS_KEY) : null;
 
+// ▼▼▼【変更】データ移行処理を削除し、シンプルなマージ処理のみに修正 ▼▼▼
 let initialAppSettings: AppSettings = defaultAppSettings;
 
 if (storedAppSettingsJSON) {
 	const parsedSettings = JSON.parse(storedAppSettingsJSON);
-
-	// デフォルト値とマージして、新しいプロパティが欠落しないようにする
-	const mergedSettings = { ...defaultAppSettings, ...parsedSettings };
-
-	// 古いデータ形式（プロンプトがただの文字列）からの移行処理
-	if (typeof mergedSettings.systemPrompt === 'string') {
-		mergedSettings.systemPrompt = {
-			isEnabled: !!mergedSettings.systemPrompt, // 文字列があればtrue
-			text: mergedSettings.systemPrompt
-		};
-	}
-	if (typeof mergedSettings.dummyUserPrompt === 'string') {
-		mergedSettings.dummyUserPrompt = {
-			isEnabled: !!mergedSettings.dummyUserPrompt, // 文字列があればtrue
-			text: mergedSettings.dummyUserPrompt
-		};
-	}
-	initialAppSettings = mergedSettings;
+	// 読み込んだ設定にデフォルト値をマージして、将来新しい設定項目が追加されても欠落しないようにする
+	initialAppSettings = { ...defaultAppSettings, ...parsedSettings };
 }
+// ▲▲▲【変更】ここまで ▲▲▲
 
 export const appSettings = writable<AppSettings>(initialAppSettings);
 
