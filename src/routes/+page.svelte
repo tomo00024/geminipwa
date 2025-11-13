@@ -1,5 +1,3 @@
-<!-- src/routes/+page.svelte -->
-
 <script lang="ts">
 	import { sessions } from '$lib/stores';
 	import { goto } from '$app/navigation';
@@ -29,7 +27,7 @@
 
 <div class="flex h-screen flex-col p-4">
 	<div class="mb-6 flex items-center justify-between">
-		<h1 class="text-2xl font-bold">履歴画面</h1>
+		<h1 class="text-xl font-bold text-gray-700">履歴画面</h1>
 		<div class="flex items-center gap-4">
 			<a
 				href="{base}/settings"
@@ -39,7 +37,7 @@
 			</a>
 			<button
 				on:click={handleNewSession}
-				class="rounded bg-blue-500 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+				class="rounded bg-[#133a0e] px-3 py-2 text-sm font-semibold text-white hover:bg-[#0d2c0b]"
 			>
 				新しいセッションを開始
 			</button>
@@ -52,18 +50,20 @@
 		</p>
 	{:else}
 		<ul class="space-y-3">
-			<!-- ▼▼▼【変更】ここから下の #each ブロック内を修正 ▼▼▼ -->
-			{#each [...$sessions].reverse() as session (session.id)}
+			{#each [...$sessions].sort((a, b) => new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime()) as session (session.id)}
 				<li class="flex items-center justify-between rounded-lg bg-white p-4 shadow">
-					<a href="{base}/session/{session.id}" class="flex-grow">
-						<div class="text-sm text-gray-600">
+					<a href="{base}/session/{session.id}" class="flex-grow overflow-hidden">
+						<div class="text-m truncate font-semibold text-gray-800">{session.title}</div>
+						<div class="mt-1 text-sm text-gray-600">
 							最終更新: {new Date(session.lastUpdatedAt).toLocaleString('ja-JP')}
 						</div>
-						<!-- (将来的にタイトルなどを表示する場合はここに追加) -->
 					</a>
 					<button
-						on:click={() => handleDeleteSession(session.id)}
-						class="flex-shrink-0 rounded bg-red-200 px-3 py-2 text-sm font-semibold text-red-800 hover:bg-red-300"
+						on:click|stopPropagation={(e) => {
+							e.preventDefault(); // aタグの遷移を防ぐ
+							handleDeleteSession(session.id);
+						}}
+						class="ml-4 flex-shrink-0 rounded bg-red-200 px-3 py-2 text-sm font-semibold text-red-800 hover:bg-red-300"
 						title="このセッションを削除"
 					>
 						削除

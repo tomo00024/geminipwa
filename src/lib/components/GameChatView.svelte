@@ -13,10 +13,6 @@
 	import { defaultGameViewSettings } from '$lib/utils';
 
 	export let currentSession: Session;
-	export let isLoading: boolean;
-	export let userInput: string;
-	export let handleSubmit: () => Promise<void>;
-	export let base: string;
 
 	// --- 状態変数 ---
 	let currentBackgroundUrl = '';
@@ -186,35 +182,7 @@
 	}
 </script>
 
-<!-- (HTMLマークアップとスタイル部分は変更なし) -->
-
-<div class="flex h-[100dvh] flex-col bg-gray-800 text-white">
-	<!-- ヘッダー部分 -->
-	<div class="flex-shrink-0 p-4">
-		<div class="flex items-center justify-between">
-			<a
-				href="{base}/"
-				class="rounded bg-gray-600 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-500"
-			>
-				履歴に戻る
-			</a>
-			<div class="flex items-center gap-4">
-				<a
-					href="{base}/settings?from=session/{currentSession.id}"
-					class="rounded bg-gray-600 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-500"
-				>
-					アプリ設定
-				</a>
-				<a
-					href="{base}/session/{currentSession.id}/settings"
-					class="rounded bg-gray-600 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-500"
-				>
-					セッション設定
-				</a>
-			</div>
-		</div>
-	</div>
-
+<div class="flex h-full flex-col">
 	<div
 		class="flex flex-shrink-0 flex-wrap justify-end gap-x-4 gap-y-1 px-4 pb-2 text-lg font-semibold"
 	>
@@ -257,8 +225,8 @@
 		{/if}
 	</div>
 
-	<!-- Part 3: ダイアログと入力フォーム -->
-	<div class="flex-shrink-0 space-y-3 p-4">
+	<!-- Part 3: ダイアログ -->
+	<div class="flex-shrink-0 px-4 pt-4">
 		<!-- ダイアログボックス -->
 		<div
 			role="button"
@@ -282,24 +250,6 @@
 				<div class="continue-indicator">▼</div>
 			{/if}
 		</div>
-
-		<!-- 入力フォーム -->
-		<form on:submit|preventDefault={handleSubmit} class="flex gap-2">
-			<input
-				type="text"
-				bind:value={userInput}
-				placeholder="メッセージを入力..."
-				class="input input-bordered flex-1 border-gray-600 bg-gray-700"
-				disabled={isLoading}
-			/>
-			<button type="submit" class="btn btn-primary" disabled={isLoading}>
-				{#if isLoading}
-					送信中...
-				{:else}
-					送信
-				{/if}
-			</button>
-		</form>
 	</div>
 </div>
 

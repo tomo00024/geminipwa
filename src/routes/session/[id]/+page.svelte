@@ -12,14 +12,13 @@
 	// --- 外部サービスと型定義、ヘルパー関数をインポート ---
 	import { callGeminiApi } from '$lib/geminiService';
 	import { processMessageIntoPages } from '$lib/utils/messageProcessor';
-	// ▼▼▼【変更】ConversationTurnを削除し、Logをインポート ▼▼▼
 	import type { Trigger, Log, FeatureSettings, AppSettings } from '$lib/types';
 	import { generateUUID } from '$lib/utils';
 
 	// --- UIコンポーネントをインポート ---
 	import StandardChatView from '$lib/components/StandardChatView.svelte';
 	import GameChatView from '$lib/components/GameChatView.svelte';
-
+	import ChatLayout from '$lib/components/ChatLayout.svelte';
 	// --- リアクティブなストア定義 (変更なし) ---
 	$: if ($currentSession) {
 		chatSessionStore.init($currentSession);
@@ -49,10 +48,7 @@
 	let userInput = '';
 	let isLoading = false;
 
-	// --- ヘルパー関数 (変更) ---
-	/**
-	 * ▼▼▼【変更】親子関係を遡って会話履歴を構築する ▼▼▼
-	 */
+	// --- ヘルパー関数 (変更なし) ---
 	function buildConversationHistory(allLogs: Log[], targetLogId: string): Log[] {
 		const history: Log[] = [];
 		const logMap = new Map(allLogs.map((log) => [log.id, log]));
@@ -69,10 +65,7 @@
 		return history;
 	}
 
-	// --- API呼び出し関数 (変更) ---
-	/**
-	 * ▼▼▼【変更】API応答を受け取り、新しいLogとしてセッションを更新する ▼▼▼
-	 */
+	// --- API呼び出し関数 (変更なし) ---
 	async function getAiResponseAndUpdate(
 		contextLogs: Log[],
 		finalUserInput: string,
@@ -108,9 +101,7 @@
 						parentId: userMessageId,
 						activeChildId: null
 					};
-					// 新しいAI応答をログに追加
 					sessionToUpdate.logs.push(newAiResponse);
-					// 親であるユーザーメッセージのactiveChildIdを更新
 					const parentUserMessage = sessionToUpdate.logs.find((log) => log.id === userMessageId);
 					if (parentUserMessage) {
 						parentUserMessage.activeChildId = newAiResponse.id;
@@ -127,9 +118,7 @@
 		}
 	}
 
-	/**
-	 * ▼▼▼【変更】新しいメッセージを送信する ▼▼▼
-	 */
+	// --- メッセージ送信関数 (変更なし) ---
 	async function handleSubmit() {
 		if (isLoading || !userInput.trim() || !$currentSession) return;
 		if (!$activeApiKey || !$model) {
@@ -143,7 +132,6 @@
 		const allLogs = $currentSession.logs;
 		const logMap = new Map(allLogs.map((log) => [log.id, log]));
 
-		// アクティブな会話の最後のログを見つける
 		let lastLog: Log | null = null;
 		if (allLogs.length > 0) {
 			let currentLog = allLogs.find((log) => log.parentId === null);
@@ -175,8 +163,10 @@
 		sessions.update((allSessions) => {
 			const sessionToUpdate = allSessions.find((s) => s.id === $currentSession.id);
 			if (sessionToUpdate) {
+				if (sessionToUpdate.logs.length === 0) {
+					sessionToUpdate.title = currentUserInput.substring(0, 10);
+				}
 				sessionToUpdate.logs.push(newUserMessage);
-				// 親のactiveChildIdを更新して、会話の主軸を新しいメッセージに切り替える
 				if (parentId) {
 					const parentLog = sessionToUpdate.logs.find((log) => log.id === parentId);
 					if (parentLog) {
@@ -188,7 +178,6 @@
 			return allSessions;
 		});
 
-		// 更新後のログ全体を取得して履歴を構築
 		const updatedLogs = get(sessions).find((s) => s.id === $currentSession.id)!.logs;
 		const history = buildConversationHistory(updatedLogs, newUserMessage.id);
 		await getAiResponseAndUpdate(
@@ -204,9 +193,7 @@
 		);
 	}
 
-	/**
-	 * ▼▼▼【変更】リトライ処理 ▼▼▼
-	 */
+	// --- リトライ関数 (変更なし) ---
 	async function handleRetry(userMessageId: string) {
 		if (isLoading || !$currentSession) return;
 		if (!$activeApiKey || !$model) {
@@ -229,21 +216,40 @@
 			$appSettings
 		);
 	}
+
+	/**
+	 * ▼▼▼【追加】タイトル更新イベントを処理する関数 ▼▼▼
+	 */
+	function handleUpdateTitle(event: CustomEvent<{ title: string }>): void {
+		const newTitle = event.detail.title;
+		if (!$currentSession || !newTitle) return;
+
+		sessions.update((allSessions) => {
+			const sessionToUpdate = allSessions.find((s) => s.id === $currentSession!.id);
+			if (sessionToUpdate) {
+				sessionToUpdate.title = newTitle;
+				sessionToUpdate.lastUpdatedAt = new Date().toISOString();
+			}
+			return allSessions;
+		});
+	}
 </script>
 
 {#if $currentSession}
-	{#if $currentSession.viewMode === 'game'}
-		<GameChatView
-			currentSession={$currentSession}
-			{isLoading}
-			bind:userInput
-			{handleSubmit}
-			{base}
-		/>
-	{:else}
-		<!-- ▼▼▼【変更】handleRetryを渡すように修正 ▼▼▼ -->
-		<StandardChatView {base} {isLoading} bind:userInput {handleSubmit} {handleRetry} />
-	{/if}
+	<!-- ▼▼▼【変更】on:updateTitleイベントリスナーを追加 ▼▼▼ -->
+	<ChatLayout
+		bind:userInput
+		{isLoading}
+		{handleSubmit}
+		sessionTitle={$currentSession.title}
+		on:updateTitle={handleUpdateTitle}
+	>
+		{#if $currentSession.viewMode === 'game'}
+			<GameChatView currentSession={$currentSession} />
+		{:else}
+			<StandardChatView {handleRetry} />
+		{/if}
+	</ChatLayout>
 {:else}
 	<div class="flex h-screen items-center justify-center">
 		<p>セッションを読み込んでいます...</p>

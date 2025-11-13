@@ -132,6 +132,7 @@ export interface Log {
 
 export interface Session {
 	id: string;
+	title: string;
 	createdAt: string;
 	lastUpdatedAt: string;
 	featureSettings: FeatureSettings;

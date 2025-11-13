@@ -77,6 +77,7 @@ export function createNewSession(): Session {
 	return {
 		// ▼▼▼【変更】安全なUUID生成関数を呼び出すように修正 ▼▼▼
 		id: generateUUID(),
+		title: '無題のセッション',
 		createdAt: now,
 		lastUpdatedAt: now,
 		logs: [],

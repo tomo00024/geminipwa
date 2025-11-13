@@ -164,7 +164,7 @@
 					<span class="text-sm text-green-600">クリップボードにコピーしました！</span>
 				{/if}
 				<button
-					class="rounded bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+					class="rounded bg-[#133a0e] px-3 py-2 text-sm font-semibold text-white hover:bg-[#0d2c0b] disabled:cursor-not-allowed disabled:opacity-50"
 					on:click={importSettings}
 					disabled={isApplyButtonDisabled}>設定を適用</button
 				>

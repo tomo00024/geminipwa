@@ -132,7 +132,7 @@
 <div class="flex h-screen flex-col p-4">
 	<!-- ヘッダー部分 -->
 	<div class="mb-6 flex items-center justify-between">
-		<h1 class="text-2xl font-bold">セッション設定</h1>
+		<h1 class="text-xl font-bold">セッション設定</h1>
 		<a
 			href="{base}/session/{$sessionId}"
 			class="rounded bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300"
