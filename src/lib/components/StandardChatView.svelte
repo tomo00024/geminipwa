@@ -163,9 +163,9 @@
 						</div>
 						<!-- 表示モードUI -->
 					{:else if isUser}
-						<p class="whitespace-pre-wrap">{log.text}</p>
+						<p style="white-space: pre-wrap;">{log.text}</p>
 					{:else}
-						{#await marked(log.text)}
+						{#await marked(log.text || '')}
 							<p>...</p>
 						{:then rawHtml}
 							{@html DOMPurify.sanitize(rawHtml)}

@@ -16,6 +16,10 @@
 	let editingTitle = '';
 	let inputElement: HTMLInputElement;
 
+	// ▼▼▼【追加】textarea要素をバインドするための変数を宣言 ▼▼▼
+	let textareaElement: HTMLTextAreaElement;
+	// ▲▲▲【追加】ここまで ▲▲▲
+
 	/**
 	 * 編集モードを開始する
 	 */
@@ -47,21 +51,33 @@
 			isEditing = false;
 		}
 	}
+
+	/**
+	 * Textareaの高さを内容に応じて自動調整する
+	 */
+	function adjustTextareaHeight(e: Event) {
+		const target = e.currentTarget as HTMLTextAreaElement;
+		target.style.height = 'auto'; // 高さを一旦リセット
+		target.style.height = `${target.scrollHeight}px`; // 内容に合わせた高さに再設定
+	}
+
+	// ▼▼▼【追加】userInputが空になったら、textareaの高さをリセットするリアクティブ処理 ▼▼▼
+	$: if (userInput === '' && textareaElement) {
+		textareaElement.style.height = 'auto';
+	}
+	// ▲▲▲【追加】ここまで ▲▲▲
 </script>
 
 <div class="flex h-[100dvh] flex-col overflow-hidden p-4">
 	<div class="flex-shrink-0">
-		<!-- ▼▼▼【変更】ここから下のヘッダーブロック全体を変更 ▼▼▼ -->
+		<!-- ヘッダーブロック (変更なし) -->
 		<div class="mb-4 flex items-center gap-4">
-			<!-- 履歴に戻るボタン (縮まないようにする) -->
 			<a
 				href="{base}/"
 				class="flex-shrink-0 rounded bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300"
 			>
 				履歴に戻る
 			</a>
-
-			<!-- タイトル（可変幅で、伸び縮みするエリア） -->
 			<div class="min-w-0 flex-1">
 				{#if isEditing}
 					<input
@@ -83,8 +99,6 @@
 					</button>
 				{/if}
 			</div>
-
-			<!-- 右寄せのアイテム (縮まないようにする) -->
 			<div class="flex flex-shrink-0 items-center gap-4">
 				<a
 					href="{base}/settings?from=session/{sessionId}"
@@ -100,7 +114,6 @@
 				</a>
 			</div>
 		</div>
-		<!-- ▲▲▲【変更】ここまで ▲▲▲ -->
 	</div>
 
 	<!-- コンテンツ表示エリア (変更なし) -->
@@ -108,17 +121,24 @@
 		<slot />
 	</div>
 
-	<!-- 入力フォーム (変更なし) -->
 	<div class="flex-shrink-0 px-4">
-		<form on:submit|preventDefault={handleSubmit} class="flex gap-2">
-			<input
-				type="text"
+		<form on:submit|preventDefault class="flex items-end gap-2">
+			<!-- ▼▼▼【変更】bind:this を追加 ▼▼▼ -->
+			<textarea
+				bind:this={textareaElement}
+				rows="1"
 				bind:value={userInput}
-				placeholder="メッセージを入力..."
+				on:input={adjustTextareaHeight}
+				placeholder={isLoading ? '送信中...' : 'メッセージを入力...'}
 				class="input flex-1 rounded-lg border border-gray-600 text-gray-200"
-				disabled={isLoading}
-			/>
-			<button type="submit" class="btn btn-primary" disabled={isLoading || !userInput.trim()}>
+			></textarea>
+			<!-- ▲▲▲【変更】ここまで ▲▲▲ -->
+			<button
+				type="button"
+				on:click={handleSubmit}
+				class="btn btn-primary"
+				disabled={isLoading || !userInput.trim()}
+			>
 				{#if isLoading}
 					送信中...
 				{:else}
@@ -139,21 +159,23 @@
 		border: none;
 		border-radius: 0.5rem;
 		cursor: pointer;
-		/* アニメーションを滑らかにする */
 		transition: background-color 0.2s;
 	}
 	.btn-primary {
 		background-color: #133a0e;
 		color: white;
 	}
-
-	/* 有効なボタンにマウスを重ねたときの色 */
 	.btn-primary:not(:disabled):hover {
 		background-color: #0d2c0b;
 	}
-
 	.btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+	textarea.input {
+		resize: none;
+		overflow-y: auto;
+		line-height: 1.5;
+		max-height: 25vh;
 	}
 </style>

@@ -48,11 +48,22 @@ function prepareGeminiContents(
  *
  */
 function parseGeminiResponse(data: GeminiApiResponse): Omit<StandardChatResponse, 'requestBody'> {
-	const part = data.candidates?.[0]?.content?.parts?.[0];
-	const responseText = part?.text ?? '予期せぬ形式の応答がありました。';
+	// parts配列全体を取得します。もし存在しない場合は空の配列とします。
+	const parts = data.candidates?.[0]?.content?.parts ?? [];
 
-	if (responseText === '予期せぬ形式の応答がありました。') {
-		console.error('Unexpected API response format:', data);
+	// parts配列内の各要素からtextプロパティを取り出し、それらを連結して一つの文字列にします。
+	const responseText = parts
+		.map((part) => part.text) // 各partからtextプロパティを抽出
+		.filter((text) => text) // textがnullやundefinedでないものだけを対象にする
+		.join(''); // 全てのテキストを結合する
+
+	// 連結したテキストが空だった場合のフォールバック処理
+	if (!responseText) {
+		console.error('Unexpected API response format or empty text:', data);
+		return {
+			responseText: '予期せぬ形式の応答がありました。',
+			metadata: data
+		};
 	}
 
 	return { responseText, metadata: data };
