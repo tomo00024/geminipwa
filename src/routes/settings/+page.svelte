@@ -1,4 +1,5 @@
 <!-- src/routes/settings/+page.svelte -->
+
 <script lang="ts">
 	import { base } from '$app/paths';
 	import { appSettings } from '$lib/stores';
@@ -59,9 +60,15 @@
 			return settings;
 		});
 	}
+
+	// --- Google Drive 同期機能のUIデモ用の仮の状態変数 (これは機能未実装のため残します) ---
+	let driveSyncStatus: 'disconnected' | 'connected' | 'error' = 'disconnected';
+	let driveUserEmail = 'user@example.com';
+	let lastSyncTime = new Date(Date.now() - 1000 * 60 * 5).toLocaleString(); // 5分前の時刻
 </script>
 
 <div class="flex h-screen flex-col p-4">
+	<!-- ▼▼▼【変更なし】ヘッダー部分は変更ありません ▼▼▼ -->
 	<div class="mb-6 flex items-center justify-between">
 		<h1 class="text-xl font-bold">アプリ設定</h1>
 		<a
@@ -71,17 +78,17 @@
 			{$returnPath.label}
 		</a>
 	</div>
+	<!-- ▲▲▲【変更なし】ヘッダー部分は変更ありません ▲▲▲ -->
 
-	<div class="space-y-6">
+	<div class="space-y-6 overflow-y-auto pb-10">
+		<!-- ▼▼▼【変更なし】APIキー設定, AIモデル選択, プロンプト設定部分は変更ありません ▼▼▼ -->
 		<!-- APIキー設定 -->
 		<div class="space-y-3">
 			<h2 class="block text-lg font-medium">API Key</h2>
-
 			<div class="space-y-2">
 				{#if $appSettings.apiKeys?.length > 0}
 					{#each $appSettings.apiKeys as apiKey, index (apiKey.id)}
 						<div class="grid grid-cols-[auto_1fr_2fr_auto] items-center gap-x-3 rounded border p-2">
-							<!-- 選択ラジオボタン -->
 							<input
 								type="radio"
 								id={`key-select-${apiKey.id}`}
@@ -91,21 +98,18 @@
 								value={apiKey.id}
 								title="このキーをチャットで使用する"
 							/>
-							<!-- 名前入力欄 -->
 							<input
 								type="text"
 								bind:value={apiKey.name}
 								class="w-full rounded border p-2 text-sm"
 								placeholder={`キー ${index + 1} の名前`}
 							/>
-							<!-- キー入力欄 -->
 							<input
 								type="password"
 								bind:value={apiKey.key}
 								class="w-full rounded border p-2 text-sm"
 								placeholder="sk-..."
 							/>
-							<!-- 削除ボタン -->
 							<button
 								on:click={() => deleteApiKey(apiKey.id)}
 								class="flex-shrink-0 rounded bg-red-200 px-3 py-2 text-sm font-semibold text-red-800 hover:bg-red-300"
@@ -121,20 +125,16 @@
 					</p>
 				{/if}
 			</div>
-
-			<!-- 追加ボタン -->
 			<button
 				class="rounded bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300"
 				on:click={addApiKey}
 			>
 				+ APIを追加
 			</button>
-
 			<p class="text-sm text-gray-600">
 				APIキーはブラウザ内にのみ保存されます。入力や変更は自動的に保存されます。
 			</p>
 		</div>
-
 		<!-- AIモデル選択 -->
 		<div class="space-y-2">
 			<label for="model-select" class="block font-medium">AIモデル</label>
@@ -151,7 +151,7 @@
 				チャットで使用するAIモデルを選択します。選択は自動的に保存されます。
 			</p>
 		</div>
-
+		<!-- システムプロンプト -->
 		<div class="space-y-2">
 			<label for="system-prompt" class="block font-medium">システムプロンプト</label>
 			<div class="flex items-center space-x-2">
@@ -175,7 +175,7 @@
 				（未実装）AIへの基本的な指示を定義します。入力すると自動的に保存されます。
 			</p>
 		</div>
-
+		<!-- ダミーユーザープロンプト -->
 		<div class="space-y-2">
 			<label for="dummy-user-prompt" class="block font-medium">ダミーユーザープロンプト</label>
 			<div class="flex items-center space-x-2">
@@ -199,5 +199,253 @@
 				ユーザー入力の直後に続く、ユーザー側の直近の発言としてダミーで入力します。入力すると自動的に保存されます。
 			</p>
 		</div>
+		<!-- UI設定 -->
+		<div class="space-y-2">
+			<h2 class="block text-lg font-medium">UI設定</h2>
+			<div class="flex items-center space-x-2">
+				<input
+					id="show-token-count"
+					type="checkbox"
+					bind:checked={$appSettings.ui.showTokenCount}
+					class="h-4 w-4 rounded"
+				/>
+				<label for="show-token-count" class="text-sm">トークン数を表示する</label>
+			</div>
+			<div class="flex items-center space-x-2">
+				<input
+					id="custom-font-size"
+					type="checkbox"
+					bind:checked={$appSettings.ui.useCustomFontSize}
+					class="h-4 w-4 rounded"
+				/>
+				<label for="custom-font-size" class="text-sm">チャットの文字サイズを変更</label>
+			</div>
+			<div class="ml-6 space-x-2" class:opacity-50={!$appSettings.ui.useCustomFontSize}>
+				<label for="font-size-input" class="text-sm">サイズ(px):</label>
+				<input
+					id="font-size-input"
+					type="number"
+					bind:value={$appSettings.ui.chatFontSize}
+					class="w-20 rounded border p-1 text-sm"
+					disabled={!$appSettings.ui.useCustomFontSize}
+				/>
+			</div>
+		</div>
+		<!-- APIキーエラー時の設定 -->
+		<div class="space-y-2">
+			<h2 class="block text-lg font-medium">APIエラー時の挙動</h2>
+			<div class="flex items-center space-x-2">
+				<input
+					id="loop-keys"
+					type="checkbox"
+					bind:checked={$appSettings.apiErrorHandling.loopApiKeys}
+					class="h-4 w-4 rounded"
+				/>
+				<label for="loop-keys" class="text-sm">429エラーのときにAPIキーをループする</label>
+			</div>
+			<div class="flex items-center space-x-2">
+				<input
+					id="exp-backoff"
+					type="checkbox"
+					bind:checked={$appSettings.apiErrorHandling.exponentialBackoff}
+					class="h-4 w-4 rounded"
+				/>
+				<label for="exp-backoff" class="text-sm">指数関数的バックオフを行う</label>
+			</div>
+			<div
+				class="ml-6 space-x-2"
+				class:opacity-50={!$appSettings.apiErrorHandling.exponentialBackoff}
+			>
+				<label for="max-retries" class="text-sm">回数:</label>
+				<input
+					id="max-retries"
+					type="number"
+					bind:value={$appSettings.apiErrorHandling.maxRetries}
+					class="w-20 rounded border p-1 text-sm"
+					disabled={!$appSettings.apiErrorHandling.exponentialBackoff}
+				/>
+				<label for="initial-wait" class="text-sm">一回目の待機時間(ms):</label>
+				<input
+					id="initial-wait"
+					type="number"
+					bind:value={$appSettings.apiErrorHandling.initialWaitTime}
+					class="w-24 rounded border p-1 text-sm"
+					disabled={!$appSettings.apiErrorHandling.exponentialBackoff}
+				/>
+			</div>
+		</div>
+
+		<!-- 便利機能 -->
+		<div class="space-y-2">
+			<h2 class="block text-lg font-medium">アシスト機能</h2>
+			<div class="flex items-center space-x-2">
+				<input
+					id="autocorrect-url"
+					type="checkbox"
+					bind:checked={$appSettings.assist.autoCorrectUrl}
+					class="h-4 w-4 rounded"
+				/>
+				<label for="autocorrect-url" class="text-sm">URLの自動補正</label>
+			</div>
+			<div class="flex items-center space-x-2">
+				<input
+					id="summarize-tokens"
+					type="checkbox"
+					bind:checked={$appSettings.assist.summarizeOnTokenOverflow}
+					class="h-4 w-4 rounded"
+				/>
+				<label for="summarize-tokens" class="text-sm">トークン数が大きくなったら要約</label>
+			</div>
+			<div class="ml-6 space-x-2" class:opacity-50={!$appSettings.assist.summarizeOnTokenOverflow}>
+				<label for="token-threshold" class="text-sm">トークン数:</label>
+				<input
+					id="token-threshold"
+					type="number"
+					bind:value={$appSettings.assist.tokenThreshold}
+					class="w-24 rounded border p-1 text-sm"
+					disabled={!$appSettings.assist.summarizeOnTokenOverflow}
+				/>
+			</div>
+		</div>
+
+		<div class="space-y-3">
+			<h2 class="block text-lg font-medium">生成パラメータ設定</h2>
+			<div class="grid max-w-md grid-cols-[150px_1fr] items-center gap-x-4 gap-y-2">
+				<!-- Temperature -->
+				<label for="temperature-input" class="text-sm font-medium">Temperature</label>
+				<input
+					id="temperature-input"
+					type="number"
+					min="0"
+					max="2"
+					step="0.1"
+					bind:value={$appSettings.generation.temperature}
+					class="w-32 rounded border p-1 text-sm"
+					placeholder="例：1"
+				/>
+
+				<!-- Top-P -->
+				<label for="top-p-input" class="text-sm font-medium">Top-P</label>
+				<input
+					id="top-p-input"
+					type="number"
+					min="0"
+					max="1"
+					step="0.01"
+					bind:value={$appSettings.generation.topP}
+					class="w-32 rounded border p-1 text-sm"
+					placeholder="例：0.95"
+				/>
+
+				<!-- Top-K -->
+				<label for="top-k-input" class="text-sm font-medium">Top-K</label>
+				<input
+					id="top-k-input"
+					type="number"
+					min="1"
+					step="1"
+					bind:value={$appSettings.generation.topK}
+					class="w-32 rounded border p-1 text-sm"
+					placeholder="例：64"
+				/>
+
+				<!-- Max Output Tokens -->
+				<label for="max-tokens-input" class="text-sm font-medium">Max Output Tokens</label>
+				<input
+					id="max-tokens-input"
+					type="number"
+					min="1"
+					step="1"
+					bind:value={$appSettings.generation.maxOutputTokens}
+					class="w-32 rounded border p-1 text-sm"
+					placeholder="例：65535"
+				/>
+
+				<!-- Thinking Budget -->
+				<label for="thinking-budget-input" class="text-sm font-medium">Thinking Budget</label>
+				<input
+					id="thinking-budget-input"
+					type="number"
+					min="-1"
+					step="1"
+					bind:value={$appSettings.generation.thinkingBudget}
+					class="w-32 rounded border p-1 text-sm"
+					placeholder="例：-1"
+				/>
+			</div>
+		</div>
+		<!-- データ管理 -->
+		<div class="space-y-3">
+			<h2 class="block text-lg font-medium">データ管理</h2>
+
+			{#if driveSyncStatus === 'disconnected'}
+				<button
+					class="rounded bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600"
+				>
+					Googleアカウントと連携する
+				</button>
+				<p class="text-sm text-gray-600">
+					セッション履歴をGoogle Driveに自動でバックアップします。
+				</p>
+			{:else if driveSyncStatus === 'connected'}
+				<div class="space-y-2 text-sm">
+					<p class="text-green-700">✓ 自動同期は有効です</p>
+					<p>アカウント: <span class="font-medium">{driveUserEmail}</span></p>
+					<p>最終同期: <span class="font-medium">{lastSyncTime}</span></p>
+				</div>
+				<div class="flex flex-wrap gap-2 pt-2">
+					<button
+						class="rounded bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300"
+					>
+						今すぐ同期
+					</button>
+					<button
+						class="rounded bg-red-200 px-3 py-2 text-sm font-semibold text-red-800 hover:bg-red-300"
+					>
+						連携を解除
+					</button>
+				</div>
+			{:else if driveSyncStatus === 'error'}
+				<p class="text-sm text-red-700">
+					同期エラーが発生しました。アカウントの連携を再度お試しください。
+				</p>
+				<button
+					class="rounded bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600"
+				>
+					Googleアカウントと再連携する
+				</button>
+			{/if}
+			<div class="flex flex-wrap gap-2">
+				<button
+					class="rounded bg-green-200 px-3 py-2 text-sm font-semibold text-green-800 hover:bg-green-300"
+				>
+					セッション履歴をJSON出力
+				</button>
+				<button
+					class="rounded bg-green-200 px-3 py-2 text-sm font-semibold text-green-800 hover:bg-green-300"
+				>
+					セッション履歴をJSON読込
+				</button>
+			</div>
+			<p class="text-sm text-gray-600">セッション履歴をJSONファイルで手動でバックアップします。</p>
+		</div>
+
+		<!-- 破壊的変更 -->
+		<div class="space-y-3 border-t border-red-300 pt-4">
+			<h2 class="block text-lg font-medium text-red-700">破壊的変更</h2>
+			<div class="flex flex-wrap gap-2">
+				<button
+					class="rounded bg-red-200 px-3 py-2 text-sm font-semibold text-red-800 hover:bg-red-300"
+				>
+					セッション履歴の破棄
+				</button>
+				<button
+					class="rounded bg-red-200 px-3 py-2 text-sm font-semibold text-red-800 hover:bg-red-300"
+				>
+					すべて破棄して初期化
+				</button>
+			</div>
+		</div>
+		<!-- ▲▲▲【変更なし】ここまで ▲▲▲ -->
 	</div>
 </div>

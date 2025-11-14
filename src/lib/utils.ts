@@ -1,6 +1,13 @@
 // src/lib/utils.ts
 
-import type { Session, GameViewSettings } from './types';
+import type {
+	Session,
+	GameViewSettings,
+	UiSettings,
+	ApiErrorHandlingSettings,
+	AssistSettings,
+	GenerationSettings
+} from './types';
 
 // ===================================================================
 // LLMモデル関連の共通設定
@@ -18,24 +25,15 @@ const commonSafetySettings = [
 	{ category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
 ];
 
-const generationConfig = {
-	temperature: 0.9,
-	topK: 1,
-	topP: 1,
-	maxOutputTokens: 2048,
-	stopSequences: []
-};
-
 /**
  * アプリケーション全体で使用するGeminiモデルの設定
  */
 export const geminiModelConfig = {
-	safetySettings: commonSafetySettings,
-	generationConfig: generationConfig
+	safetySettings: commonSafetySettings
 };
 
 // ===================================================================
-// ▼▼▼【ここから追加】デフォルト設定値
+// デフォルト設定値
 // ===================================================================
 
 /**
@@ -51,12 +49,51 @@ export const defaultGameViewSettings: GameViewSettings = {
 	}
 };
 
+// ▼▼▼【ここから追加】AppSettings の各項目のデフォルト値 ▼▼▼
+/**
+ * UI設定のデフォルト値
+ */
+export const defaultUiSettings: UiSettings = {
+	showTokenCount: true,
+	useCustomFontSize: false,
+	chatFontSize: 16
+};
+
+/**
+ * APIエラー時の挙動のデフォルト値
+ */
+export const defaultApiErrorHandlingSettings: ApiErrorHandlingSettings = {
+	loopApiKeys: false,
+	exponentialBackoff: false,
+	maxRetries: 5,
+	initialWaitTime: 1000
+};
+
+/**
+ * アシスト機能のデフォルト値
+ */
+export const defaultAssistSettings: AssistSettings = {
+	autoCorrectUrl: false,
+	summarizeOnTokenOverflow: false,
+	tokenThreshold: 3000
+};
+// ▲▲▲【ここまで追加】
+/**
+ * 生成設定のデフォルト値
+ */
+export const defaultGenerationSettings: GenerationSettings = {
+	temperature: null,
+	topK: null,
+	topP: null,
+	maxOutputTokens: null,
+	thinkingBudget: null
+};
 // ===================================================================
 // セッション関連のヘルパー関数
 // ===================================================================
 
 /**
- * ▼▼▼【追加】安全なUUID生成関数▼▼▼
+ * 安全なUUID生成関数
  * crypto.randomUUIDが使えない環境でも簡易的なIDを生成する
  * @returns {string} UUID
  */
@@ -75,7 +112,6 @@ export function generateUUID(): string {
 export function createNewSession(): Session {
 	const now = new Date().toISOString();
 	return {
-		// ▼▼▼【変更】安全なUUID生成関数を呼び出すように修正 ▼▼▼
 		id: generateUUID(),
 		title: '無題のセッション',
 		createdAt: now,

@@ -72,7 +72,6 @@ function createChatSessionStore() {
 		},
 
 		/**
-		 * ▼▼▼【変更】単一のメッセージを削除し、親子関係を再接続する新しい関数 ▼▼▼
 		 * @param messageId 削除対象のメッセージID
 		 */
 		deleteSingleMessage: (messageId: string) => {
@@ -83,6 +82,16 @@ function createChatSessionStore() {
 			const targetLog = logMap.get(messageId);
 
 			if (!targetLog) return;
+
+			// ▼▼▼【変更】兄弟メッセージが存在するかチェックするロジックを追加 ▼▼▼
+			if (targetLog.parentId) {
+				const siblings = state.session.logs.filter((log) => log.parentId === targetLog.parentId);
+				if (siblings.length > 1) {
+					alert('このメッセージには他の返信ブランチが存在するため、単体では削除できません。');
+					return;
+				}
+			}
+			// ▲▲▲【変更】ここまで ▲▲▲
 
 			// このメッセージから分岐している子の数を数える
 			const children = state.session.logs.filter((log) => log.parentId === messageId);

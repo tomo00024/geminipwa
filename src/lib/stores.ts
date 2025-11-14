@@ -3,7 +3,13 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import type { AppSettings, Session } from './types';
-import { availableModels } from './utils';
+import {
+	availableModels,
+	defaultUiSettings,
+	defaultApiErrorHandlingSettings,
+	defaultAssistSettings,
+	defaultGenerationSettings
+} from './utils';
 
 const APP_SETTINGS_KEY = 'app_settings';
 const SESSIONS_KEY = 'sessions';
@@ -20,7 +26,11 @@ const defaultAppSettings: AppSettings = {
 	dummyUserPrompt: {
 		isEnabled: false,
 		text: ''
-	}
+	},
+	ui: { ...defaultUiSettings },
+	apiErrorHandling: { ...defaultApiErrorHandlingSettings },
+	assist: { ...defaultAssistSettings },
+	generation: { ...defaultGenerationSettings }
 };
 
 // 2. localStorageから初期値を読み込む
@@ -32,9 +42,19 @@ let initialAppSettings: AppSettings = defaultAppSettings;
 if (storedAppSettingsJSON) {
 	const parsedSettings = JSON.parse(storedAppSettingsJSON);
 	// 読み込んだ設定にデフォルト値をマージして、将来新しい設定項目が追加されても欠落しないようにする
-	initialAppSettings = { ...defaultAppSettings, ...parsedSettings };
+	// ネストされたオブジェクトも個別にマージすることで、より安全に更新を適用する
+	initialAppSettings = {
+		...defaultAppSettings,
+		...parsedSettings,
+		ui: { ...defaultAppSettings.ui, ...(parsedSettings.ui || {}) },
+		apiErrorHandling: {
+			...defaultAppSettings.apiErrorHandling,
+			...(parsedSettings.apiErrorHandling || {})
+		},
+		assist: { ...defaultAppSettings.assist, ...(parsedSettings.assist || {}) },
+		generation: { ...defaultAppSettings.generation, ...(parsedSettings.generation || {}) }
+	};
 }
-// ▲▲▲【変更】ここまで ▲▲▲
 
 export const appSettings = writable<AppSettings>(initialAppSettings);
 

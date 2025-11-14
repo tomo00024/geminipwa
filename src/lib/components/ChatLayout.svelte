@@ -115,7 +115,7 @@
 				type="text"
 				bind:value={userInput}
 				placeholder="メッセージを入力..."
-				class="input bg-opacity-50 flex-1 rounded-lg border border-gray-600 bg-black text-gray-200"
+				class="input flex-1 rounded-lg border border-gray-600 text-gray-200"
 				disabled={isLoading}
 			/>
 			<button type="submit" class="btn btn-primary" disabled={isLoading || !userInput.trim()}>

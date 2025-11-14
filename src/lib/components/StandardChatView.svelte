@@ -3,6 +3,7 @@
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { tick } from 'svelte';
+	import { slide } from 'svelte/transition';
 
 	// --- ストアと型をインポート ---
 	import { chatSessionStore } from '$lib/chatSessionStore';
@@ -16,15 +17,28 @@
 	let activeMenuId: string | null = null;
 	// ▼▼▼【追加】コピー状態を管理する変数 ▼▼▼
 	let copiedLogId: string | null = null;
+	let expandedMetadataLogId: string | null = null;
 
 	function toggleMenu(logId: string) {
 		activeMenuId = activeMenuId === logId ? null : logId;
 	}
-
+	function toggleMetadata(logId: string) {
+		expandedMetadataLogId = expandedMetadataLogId === logId ? null : logId;
+		activeMenuId = null;
+	}
 	function handleClickOutside(event: MouseEvent) {
 		const target = event.target as HTMLElement;
+		// メニューの外側をクリックした場合
 		if (activeMenuId && !target.closest('.chat-bubble, .action-menu')) {
 			activeMenuId = null;
+		}
+		// メタデータ表示領域や、それを操作するメニューの外側をクリックした場合
+		if (
+			expandedMetadataLogId &&
+			!target.closest('.metadata-container') &&
+			!target.closest('.action-menu')
+		) {
+			expandedMetadataLogId = null;
 		}
 	}
 
@@ -194,10 +208,21 @@
 								再生成
 							</button>
 						{/if}
+						{#if log.metadata}
+							<button class="menu-button" on:click={() => toggleMetadata(log.id)}>
+								メタデータ
+							</button>
+						{/if}
 					</div>
 				{/if}
 			</div>
-
+			{#if expandedMetadataLogId === log.id && log.metadata}
+				<div class="flex w-full {isUser ? 'justify-end' : 'justify-start'}">
+					<div class="metadata-container" transition:slide={{ duration: 200 }}>
+						<pre><code>{JSON.stringify(log.metadata, null, 2)}</code></pre>
+					</div>
+				</div>
+			{/if}
 			<!-- 分岐ナビゲーションUI -->
 			{#if !isUser && log.parentId}
 				{@const siblings = $chatSessionStore.session.logs.filter(
@@ -247,7 +272,7 @@
 		max-width: 90%;
 		padding: 0rem 1rem;
 		border-radius: 1rem;
-		background-color: #fafafa;
+		background-color: #f3f3f3;
 		color: #3d3d3d;
 	}
 	.chat-bubble :global(h1),
@@ -275,7 +300,7 @@
 	}
 	.chat-bubble-primary {
 		background-color: #133a0e;
-		color: e5e7eb;
+		color: #e5e7eb;
 	}
 	.chat-bubble-primary :global(pre) {
 		background-color: #133a0e;
@@ -393,5 +418,23 @@
 	.branch-text {
 		font-size: 0.875rem;
 		color: #6b7280;
+	}
+	.metadata-container {
+		max-width: 90%; /* チャットバブルの最大幅と合わせる */
+		padding: 1rem;
+		background-color: #f3f4f6; /* 背景色 */
+		border: 1px solid #e5e7eb; /* 枠線 */
+		border-radius: 0.5rem; /* 角丸 */
+		overflow-x: auto; /* 内容が長い場合に横スクロールを許可 */
+		margin-top: -0.5rem; /* チャットバブルとの間隔を詰める */
+		margin-bottom: 1rem; /* 次のチャットとの間隔を確保 */
+	}
+
+	.metadata-container pre {
+		/* preタグのデフォルトマージンをリセット */
+		margin: 0;
+		/* 長い行でも折り返さず、スクロールで表示 */
+		white-space: pre;
+		font-size: 0.875rem; /* 文字サイズを少し小さく */
 	}
 </style>

@@ -16,6 +16,7 @@ interface GenerateResponseAndStateArgs {
 export interface OneStepFCChatResponse {
 	responseText: string;
 	goodwillFluctuation: number;
+	metadata: any;
 }
 interface GeminiApiResponse {
 	candidates: Array<{
@@ -130,24 +131,31 @@ function prepareGeminiContents(
  * Gemini APIからのレスポンス(1ステップFC用)を解析し、ChatResponse形式に変換します。
  */
 function parseOneStepFCResponse(data: GeminiApiResponse): OneStepFCChatResponse {
-	// 関数名をより具体的に
 	const part = data.candidates?.[0]?.content?.parts?.[0];
 
 	if (part?.functionCall?.name === 'generateResponseAndState') {
-		// 対応する関数名に変更
 		const args = part.functionCall.args;
 		return {
 			responseText: args.responseText,
-			goodwillFluctuation: args.goodwillFluctuation ?? 0
+			goodwillFluctuation: args.goodwillFluctuation ?? 0,
+			metadata: data // APIレスポンス全体をメタデータとして追加
 		};
 	}
 
 	if (part?.text) {
-		return { responseText: part.text, goodwillFluctuation: 0 };
+		return {
+			responseText: part.text,
+			goodwillFluctuation: 0,
+			metadata: data // APIレスポンス全体をメタデータとして追加
+		};
 	}
 
 	console.error('Unexpected API response format for OneStepFC:', data);
-	return { responseText: '予期せぬ形式の応答がありました。', goodwillFluctuation: 0 };
+	return {
+		responseText: '予期せぬ形式の応答がありました。',
+		goodwillFluctuation: 0,
+		metadata: data // 予期せぬ形式でも、データ自体はメタデータとして保持
+	};
 }
 
 // ===================================================================
@@ -186,10 +194,13 @@ export async function callGeminiApiWithOneStepFC( // 関数名を役割がわか
 		if (!response.ok) {
 			const errorBody = await response.json();
 			console.error('Gemini API Error (OneStepFC):', errorBody.error.message);
+			// ▼▼▼【変更】エラー時も metadata を含める ▼▼▼
 			return {
 				responseText: `APIエラーが発生しました: ${errorBody.error.message}`,
-				goodwillFluctuation: 0
+				goodwillFluctuation: 0,
+				metadata: { error: errorBody }
 			};
+			// ▲▲▲【変更ここまで】▲▲▲
 		}
 
 		const data = (await response.json()) as GeminiApiResponse;
@@ -197,6 +208,12 @@ export async function callGeminiApiWithOneStepFC( // 関数名を役割がわか
 	} catch (error) {
 		console.error('Network or other error calling Gemini API (OneStepFC):', error);
 		const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-		return { responseText: `通信エラーが発生しました: ${errorMessage}`, goodwillFluctuation: 0 };
+		// ▼▼▼【変更】エラー時も metadata を含める ▼▼▼
+		return {
+			responseText: `通信エラーが発生しました: ${errorMessage}`,
+			goodwillFluctuation: 0,
+			metadata: { error: String(error) }
+		};
+		// ▲▲▲【変更ここまで】▲▲▲
 	}
 }

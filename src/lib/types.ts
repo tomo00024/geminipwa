@@ -1,8 +1,9 @@
 // src/lib/types.ts
+
 // ===================================================================
 // 1. 各機能が使用する、固有の設定とデータの型を定義する
 // ===================================================================
-// ▲▲▲【変更なし】ここから下の内容は変更ありません
+// ▲▲▲【変更なし】ここから上の内容は変更ありません
 
 /**
  * 好感度機能 (Function Calling) の設定とデータ
@@ -91,7 +92,7 @@ export interface FeatureSettings {
 }
 
 // ===================================================================
-// 3. コアとなるSessionインターフェースを定義する
+// 3. コアとなるSessionインターフェースとAppSettingsインターフェースを定義する
 // ===================================================================
 export interface ApiKey {
 	id: string;
@@ -99,6 +100,45 @@ export interface ApiKey {
 	key: string;
 }
 
+// ▼▼▼【ここから追加】AppSettings内の詳細な型定義 ▼▼▼
+/**
+ * UI設定
+ */
+export interface UiSettings {
+	showTokenCount: boolean;
+	useCustomFontSize: boolean;
+	chatFontSize: number;
+}
+
+/**
+ * APIエラー時のリトライ設定
+ */
+export interface ApiErrorHandlingSettings {
+	loopApiKeys: boolean;
+	exponentialBackoff: boolean;
+	maxRetries: number;
+	initialWaitTime: number;
+}
+
+/**
+ * アシスト機能設定
+ */
+export interface AssistSettings {
+	autoCorrectUrl: boolean;
+	summarizeOnTokenOverflow: boolean;
+	tokenThreshold: number;
+}
+// ▲▲▲【ここまで追加】
+/**
+ * AIモデルの生成設定
+ */
+export interface GenerationSettings {
+	temperature: number | null;
+	topK: number | null;
+	topP: number | null;
+	maxOutputTokens: number | null;
+	thinkingBudget: number | null;
+}
 export interface AppSettings {
 	apiKeys: ApiKey[];
 	activeApiKeyId: string | null;
@@ -111,6 +151,10 @@ export interface AppSettings {
 		isEnabled: boolean;
 		text: string;
 	};
+	ui: UiSettings;
+	apiErrorHandling: ApiErrorHandlingSettings;
+	assist: AssistSettings;
+	generation: GenerationSettings;
 }
 
 /**
@@ -128,6 +172,7 @@ export interface Log {
 	 * 現在アクティブな子のIDを保持する。
 	 */
 	activeChildId: string | null;
+	metadata?: any;
 }
 
 export interface Session {

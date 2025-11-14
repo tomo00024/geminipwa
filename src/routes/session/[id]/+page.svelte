@@ -93,19 +93,31 @@
 			sessions.update((allSessions) => {
 				const sessionToUpdate = allSessions.find((s) => s.id === sessionId);
 				if (sessionToUpdate) {
+					const parentUserMessage = sessionToUpdate.logs.find((log) => log.id === userMessageId);
+
+					// 1. ユーザーメッセージにリクエストボディをメタデータとして保存
+					if (parentUserMessage && 'requestBody' in result) {
+						// oneStepFCなど他のモードからの返り値も考慮し、プロパティの存在をチェック
+						parentUserMessage.metadata = (result as any).requestBody;
+					}
+
+					// 2. 新しいAIの応答を作成
 					const newAiResponse: Log = {
 						id: generateUUID(),
 						speaker: 'ai',
 						text: result.responseText,
 						timestamp: new Date().toISOString(),
 						parentId: userMessageId,
-						activeChildId: null
+						activeChildId: null,
+						metadata: result.metadata // APIからのレスポンスボディ
 					};
 					sessionToUpdate.logs.push(newAiResponse);
-					const parentUserMessage = sessionToUpdate.logs.find((log) => log.id === userMessageId);
+
+					// 3. 親メッセージの activeChildId を更新
 					if (parentUserMessage) {
 						parentUserMessage.activeChildId = newAiResponse.id;
 					}
+
 					sessionToUpdate.lastUpdatedAt = new Date().toISOString();
 				}
 				return allSessions;
