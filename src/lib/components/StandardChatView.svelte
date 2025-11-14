@@ -110,7 +110,7 @@
 {#if $chatSessionStore.session}
 	<!-- チャットログのループ処理 -->
 	<div
-		class="space-y-4 rounded px-4"
+		class="space-y-4 rounded px-0 pr-2"
 		style="--chat-font-size: {$appSettings.ui.useCustomFontSize
 			? `${$appSettings.ui.chatFontSize}px`
 			: 'initial'}"
@@ -274,18 +274,40 @@
 	}
 	.chat-bubble {
 		position: relative;
-		max-width: 90%;
+		max-width: 95%;
 		padding: 0rem 1rem;
 		border-radius: 1rem;
 		background-color: #f3f3f3;
 		color: #3d3d3d;
 		font-size: var(--chat-font-size, inherit);
 	}
+	.chat-bubble :global(h1) {
+		font-size: 1.5em;
+	}
+	.chat-bubble :global(h2) {
+		font-size: 1.25em;
+	}
+	.chat-bubble :global(h3) {
+		font-size: 1.1em;
+	}
+	.chat-bubble :global(h4) {
+		font-size: 1em;
+	}
+	.chat-bubble :global(h5) {
+		font-size: 0.9em;
+	}
+	.chat-bubble :global(h6) {
+		font-size: 0.8em;
+	}
+
 	.chat-bubble :global(h1),
 	.chat-bubble :global(h2),
-	.chat-bubble :global(h3) {
+	.chat-bubble :global(h3),
+	.chat-bubble :global(h4),
+	.chat-bubble :global(h5),
+	.chat-bubble :global(h6) {
 		font-weight: bold;
-		margin-top: 0.5em;
+		margin-top: 1em;
 		margin-bottom: 0.5em;
 	}
 	.chat-bubble :global(p) {
@@ -426,7 +448,7 @@
 		color: #6b7280;
 	}
 	.metadata-container {
-		max-width: 90%; /* チャットバブルの最大幅と合わせる */
+		max-width: 95%; /* チャットバブルの最大幅と合わせる */
 		padding: 1rem;
 		background-color: #f3f4f6; /* 背景色 */
 		border: 1px solid #e5e7eb; /* 枠線 */
