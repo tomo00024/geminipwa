@@ -69,6 +69,19 @@ export interface Trigger {
 // ===================================================================
 
 /**
+ * ▼▼▼【ここから追加】▼▼▼
+ * 画像URL補正機能のルールを格納する型
+ */
+export interface ImageCorrectionRule {
+	baseUrl: string;
+	pathKeywords: string[];
+	extensions: string[];
+	markdownTemplate: {
+		start: string;
+		end: string;
+	};
+}
+/**
  * 画像のサイジング設定の型
  */
 export interface ImageSizingSetting {

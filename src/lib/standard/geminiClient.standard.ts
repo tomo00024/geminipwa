@@ -171,17 +171,19 @@ export async function callGeminiApiOnClient(
 				);
 				await new Promise((resolve) => setTimeout(resolve, waitTime));
 				continue; // 次の試行へ
+			} else if (retryableStatuses.includes(response.status) && attempt === maxAttempts - 1) {
+				// ▼▼▼【変更箇所 1】▼▼▼
+				// 最後のリトライ試行がリトライ対象エラーだった場合、ここでは何もせずループを抜けさせる
+				// lastErrorには既にエラー情報が格納されている
+				break;
 			} else {
-				// ▼▼▼【変更箇所 1】ここから ▼▼▼
-				// リトライ対象外のエラー、または最後のリトライだった場合
-				// エラー情報からメッセージとコードを安全に取得
+				// ▼▼▼【変更箇所 2】▼▼▼
+				// リトライ対象外のエラーだった場合は、即座にエラーを返して終了する
+				// (これは元のロジックと同じ挙動)
 				const errorMessage = errorBody.error?.message || '不明なAPIエラーです。';
 				const errorCode = errorBody.error?.code || response.status;
 				const errorStatus = errorBody.error?.status || '';
-
-				// ユーザーに表示するためのエラーメッセージを組み立てる
 				const userFacingMessage = `APIエラーが発生しました (${errorCode} ${errorStatus}): ${errorMessage}`;
-
 				console.error('Gemini API Error:', userFacingMessage);
 				return {
 					responseText: userFacingMessage, // 組み立てたメッセージを返す
@@ -229,7 +231,7 @@ export async function callGeminiApiOnClient(
 	}
 
 	return {
-		responseText: `処理に失敗しました (全リトライ失敗): ${finalErrorMessage}`,
+		responseText: `処理に失敗しました (全${maxAttempts}回の試行に失敗): ${finalErrorMessage}`,
 		metadata: { error: lastError },
 		requestBody: requestBody
 	};

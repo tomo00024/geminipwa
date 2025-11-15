@@ -1,13 +1,21 @@
 // src/lib/chatSessionStore.ts
 
 import { writable, get } from 'svelte/store';
-import type { Session, Log } from '$lib/types';
-import { sessions } from '$lib/stores'; // 全セッションを管理するグローバルストア
+import type { Session, Log, ImageCorrectionRule } from '$lib/types';
+import { sessions, appSettings } from '$lib/stores';
+
+import { getActiveImageRule, correctImageMarkdownInText } from '$lib/utils/imageUrlCorrector';
 
 export interface ChatSessionState {
 	session: Session | null;
 	editingMessageId: string | null;
 	editingText: string;
+}
+
+// _applyImageCorrection 関数を全面的に書き換える
+function _applyImageCorrection(originalText: string): string {
+	// 新しい統括関数に処理を完全に委譲する
+	return correctImageMarkdownInText(originalText);
 }
 
 function createChatSessionStore() {
@@ -48,13 +56,32 @@ function createChatSessionStore() {
 			});
 		},
 
+		// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 修正箇所 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
 		saveEditing: () => {
 			const state = get(chatSessionStore);
 			if (!state.session || !state.editingMessageId) return;
 
+			const logToEdit = state.session.logs.find((log) => log.id === state.editingMessageId);
+
+			let finalText = state.editingText;
+
+			// 編集対象がAIのメッセージである場合のみ、処理を検討
+			if (logToEdit && logToEdit.speaker !== 'user') {
+				// 最新の設定値を取得
+				const settings = get(appSettings);
+
+				// 「URLの自動補正」がONの場合のみ、補正処理を実行
+				if (settings.assist.autoCorrectUrl) {
+					console.log('[Edit Save] URL auto-correction is enabled. Applying correction...');
+					finalText = _applyImageCorrection(state.editingText);
+				} else {
+					console.log('[Edit Save] URL auto-correction is disabled.');
+				}
+			}
+
 			const newLogs = state.session.logs.map((log) => {
 				if (log.id === state.editingMessageId) {
-					return { ...log, text: state.editingText };
+					return { ...log, text: finalText };
 				}
 				return log;
 			});
@@ -70,6 +97,7 @@ function createChatSessionStore() {
 				return s;
 			});
 		},
+		// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 修正箇所 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
 		/**
 		 * @param messageId 削除対象のメッセージID
@@ -83,7 +111,6 @@ function createChatSessionStore() {
 
 			if (!targetLog) return;
 
-			// ▼▼▼【変更】兄弟メッセージが存在するかチェックするロジックを追加 ▼▼▼
 			if (targetLog.parentId) {
 				const siblings = state.session.logs.filter((log) => log.parentId === targetLog.parentId);
 				if (siblings.length > 1) {
@@ -91,12 +118,9 @@ function createChatSessionStore() {
 					return;
 				}
 			}
-			// ▲▲▲【変更】ここまで ▲▲▲
 
-			// このメッセージから分岐している子の数を数える
 			const children = state.session.logs.filter((log) => log.parentId === messageId);
 
-			// 制約: 分岐の親は削除できない
 			if (children.length > 1) {
 				alert('このメッセージからは会話が分岐しているため、削除できません。');
 				return;
@@ -109,9 +133,7 @@ function createChatSessionStore() {
 			const parentLog = targetLog.parentId ? logMap.get(targetLog.parentId) : null;
 			const childLog = children.length === 1 ? children[0] : null;
 
-			// 1. 親子関係の再接続
 			if (parentLog) {
-				// 親のactiveChildIdを、孫(child)に付け替える
 				if (parentLog.activeChildId === targetLog.id) {
 					newLogs = newLogs.map((log) =>
 						log.id === parentLog.id ? { ...log, activeChildId: childLog ? childLog.id : null } : log
@@ -119,16 +141,13 @@ function createChatSessionStore() {
 				}
 			}
 			if (childLog) {
-				// 孫(child)のparentIdを、祖父(parent)に付け替える
 				newLogs = newLogs.map((log) =>
 					log.id === childLog.id ? { ...log, parentId: parentLog ? parentLog.id : null } : log
 				);
 			}
 
-			// 2. ターゲットを削除
 			newLogs = newLogs.filter((log) => log.id !== messageId);
 
-			// 3. ストアを更新
 			sessions.update((allSessions) => {
 				return allSessions.map((s) => (s.id === state.session?.id ? { ...s, logs: newLogs } : s));
 			});

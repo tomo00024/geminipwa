@@ -15,6 +15,11 @@
 	import { processMessageIntoPages } from '$lib/utils/messageProcessor';
 	import type { Trigger, Log, FeatureSettings, AppSettings } from '$lib/types';
 	import { generateUUID } from '$lib/utils';
+	import {
+		initializeAndStoreImageRules,
+		correctImageMarkdownInText,
+		extractImageUrlsFromAiResponse
+	} from '$lib/utils/imageUrlCorrector';
 
 	// --- UIコンポーネントをインポート ---
 	import StandardChatView from '$lib/components/StandardChatView.svelte';
@@ -48,7 +53,33 @@
 	// --- コンポーネントの状態変数 (変更なし) ---
 	let userInput = '';
 	let isLoading = false;
+	let lastProcessedSessionId: string | null = null;
+	let lastProcessedLogCount: number = 0;
+	// 役割：本当に必要なタイミングでだけ、ルールの解析を実行する
+	$: if ($currentSession) {
+		const currentId = $currentSession.id;
+		const currentLogCount = $currentSession.logs.length;
 
+		// --- 実行条件の判定 ---
+		// 1. 最後に処理したセッションIDと今のIDが違う (＝セッションを切り替えた)
+		const hasSessionChanged = currentId !== lastProcessedSessionId;
+
+		// 2. 最後に処理した時のログ数が0で、今のログ数が0より多い (＝初めての投稿)
+		const isFirstPost = lastProcessedLogCount === 0 && currentLogCount > 0;
+
+		// --- 条件を満たした場合のみ処理を実行 ---
+		if (hasSessionChanged || isFirstPost) {
+			console.log('ルール解析の実行条件を満たしました。処理を実行します。');
+
+			// 必要な初期化処理を実行
+			chatSessionStore.init($currentSession);
+			initializeAndStoreImageRules($currentSession);
+
+			// 「記憶用の変数」を現在の状態に更新し、次回の不要な実行を防ぐ
+			lastProcessedSessionId = currentId;
+			lastProcessedLogCount = currentLogCount;
+		}
+	}
 	// --- ヘルパー関数 (変更なし) ---
 	function buildConversationHistory(allLogs: Log[], targetLogId: string): Log[] {
 		const history: Log[] = [];
@@ -141,6 +172,17 @@
 						break; // ループを抜ける
 					}
 				} else {
+					// AIの応答からURLを抽出してコンソールにログ出力する
+					let responseText = result.responseText;
+					const settings = get(appSettings); // 最新の設定を取得
+
+					// 「URLの自動補正」がONの場合のみ、補正処理を実行する
+					if (settings.assist.autoCorrectUrl) {
+						console.log('[AI Response] URL auto-correction is enabled. Applying correction...');
+						responseText = correctImageMarkdownInText(responseText);
+					} else {
+						console.log('[AI Response] URL auto-correction is disabled.');
+					}
 					// 通常の成功時: ストアを更新してループを抜ける
 					sessions.update((allSessions) => {
 						const sessionToUpdate = allSessions.find((s) => s.id === sessionId);
