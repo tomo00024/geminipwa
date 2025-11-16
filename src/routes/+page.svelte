@@ -18,23 +18,7 @@
 	let publishScope: 'template' | 'full' | null = null;
 	let modalElement: HTMLDivElement;
 	let dataLinkModalElement: HTMLDivElement;
-	import { onMount } from 'svelte'; // ★ onMount をインポート
 
-	export let data; // ★ +layout.server.ts からデータを受け取る
-
-	// ★ この onMount ブロックを丸ごと追加してください
-	onMount(() => {
-		console.log('--- ページ読み込み時のセッション情報 ---');
-		if (data.session) {
-			console.log('✅ ログインしています。');
-			console.log('セッション内容:', data.session);
-			// 例: ユーザーIDの確認
-			console.log('ユーザーID:', data.session.user?.id);
-		} else {
-			console.log('❌ ログインしていません。');
-		}
-		console.log('------------------------------------');
-	});
 	// --- キーボードイベントハンドラ ---
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape') {
