@@ -23,14 +23,6 @@
 			label: '履歴に戻る'
 		};
 	});
-	// $page ストアの変更を監視してコンソールに出力
-	$: {
-		if ($page.data.session) {
-			console.log('[/settings] Session data updated:', $page.data.session);
-		} else {
-			console.log('[/settings] Session data is null.');
-		}
-	}
 
 	/**
 	 * 新しいAPIキー項目をリストに追加します。
