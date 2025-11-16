@@ -144,12 +144,12 @@
 					完了
 				</button>
 			{:else}
-				<!-- 通常時は「データ連携」ボタンを表示 -->
+				<!-- 通常時は「公開サーバー」ボタンを表示 -->
 				<button
 					on:click={openDataLinkModal}
 					class="rounded bg-gray-500 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-600"
 				>
-					データ連携
+					公開サーバー
 				</button>
 			{/if}
 			<a
@@ -321,7 +321,7 @@
 			aria-modal="true"
 			aria-labelledby="data-link-modal-title"
 		>
-			<h2 id="data-link-modal-title" class="text-xl font-bold text-gray-800">データ連携</h2>
+			<h2 id="data-link-modal-title" class="text-xl font-bold text-gray-800">公開サーバー</h2>
 			<p class="mt-2 text-sm text-gray-600">どの操作を実行しますか？</p>
 
 			<!-- 選択肢 -->
