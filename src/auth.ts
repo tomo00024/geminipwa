@@ -2,25 +2,33 @@
 
 import { SvelteKitAuth } from '@auth/sveltekit';
 import Google from '@auth/sveltekit/providers/google';
-import { AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, AUTH_SECRET, AUTH_URL } from '$env/static/private';
+import { AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, AUTH_SECRET } from '$env/static/private';
 
-export const { handle, signIn, signOut } = SvelteKitAuth(async (event) => {
-	// Vercelのログで実行中の値を確認するためのログ出力
-	console.log('--- Auth.js Initialization ---');
-	console.log('Request URL Origin:', event.url.origin);
-	console.log('AUTH_URL from env:', AUTH_URL); // $env/static/private から読み込んだ値
-	console.log('--- End Auth.js Initialization ---');
+// 本番環境かどうかを判定
+const isProduction = process.env.NODE_ENV === 'production';
 
-	const authOptions = {
-		providers: [
-			Google({
-				clientId: AUTH_GOOGLE_ID,
-				clientSecret: AUTH_GOOGLE_SECRET
-			})
-		],
-		secret: AUTH_SECRET,
-		trustHost: true // ★★★ デバッグのために一時的に元に戻します ★★★
-	};
+export const { handle, signIn, signOut } = SvelteKitAuth({
+	providers: [
+		Google({
+			clientId: AUTH_GOOGLE_ID,
+			clientSecret: AUTH_GOOGLE_SECRET
+		})
+	],
+	secret: AUTH_SECRET,
+	// trustHost: true は削除します。AUTH_URLを信頼の源泉とします。
 
-	return authOptions;
+	// Cookieの設定を明示的に行い、セッションが維持されるようにします。
+	cookies: {
+		sessionToken: {
+			name: isProduction ? `__Secure-authjs.session-token` : `authjs.session-token`,
+			options: {
+				httpOnly: true,
+				sameSite: 'lax',
+				path: '/',
+				// Vercelの本番ドメインと、そのサブドメイン（例: www）でCookieを共有するためにドメインを指定
+				domain: isProduction ? '.gemini-novel-tool.vercel.app' : 'localhost',
+				secure: isProduction
+			}
+		}
+	}
 });
