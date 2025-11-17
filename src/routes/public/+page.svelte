@@ -7,7 +7,6 @@
 	 * この `data` プロパティを通じて自動的に受け取ることができます。
 	 */
 	export let data;
-	console.log('--- [BROWSER LOG] Data received by the page component ---', data);
 
 	function handleDownload(fileId: string) {
 		alert(`ID: ${fileId} のファイルをダウンロードします。(機能は未実装です)`);
@@ -19,7 +18,7 @@
 		<div>
 			<h1 class="text-2xl font-bold text-gray-800">公開セッションを探す</h1>
 			<p class="mt-1 text-gray-600">
-				他のユーザーが公開したセッションをあなたのアプリに読み込みます。 p>
+				他のユーザーが公開したセッションをあなたのアプリに読み込みます
 			</p>
 		</div>
 		<a
@@ -78,7 +77,7 @@
 
 							<div class="mt-3 flex items-center justify-between">
 								<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
-									<span>👤 {file.uploaderName}</span>
+									<span>👤 {file.authorName}</span>
 									<span>★ {file.starCount}</span>
 									<span>↓ {file.downloadCount}</span>
 									<span>{new Date(file.uploadedAt).toLocaleDateString()}</span>
