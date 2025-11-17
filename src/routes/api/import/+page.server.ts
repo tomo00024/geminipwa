@@ -1,4 +1,4 @@
-// src/routes/public/+page.server.ts
+// src/routes/import/+page.server.ts
 
 import { createPool } from '@vercel/postgres';
 import type { PageServerLoad } from './$types';

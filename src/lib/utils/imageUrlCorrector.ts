@@ -30,11 +30,6 @@ export function initializeAndStoreImageRules(session: Session | null): void {
 		return;
 	}
 
-	console.log('[ruleParser] Attempting to parse rules from the following text:');
-	console.log('-------------------- START OF TEXT --------------------');
-	console.log(sourceText);
-	console.log('--------------------- END OF TEXT ---------------------');
-
 	const parsedRule = _parseRuleFromText(sourceText);
 	activeRule = parsedRule;
 

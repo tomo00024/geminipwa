@@ -1,10 +1,10 @@
-<!-- src/routes/public/+page.svelte -->
+<!-- src/routes/import/+page.svelte -->
 <script lang="ts">
 	import { base } from '$app/paths';
 	// 作成したモーダルコンポーネントをインポート
 	import FileDetailModal from '$lib/components/FileDetailModal.svelte';
 
-	export let data;
+	export let data../../import/$types.js;
 
 	// モーダル表示のための状態変数
 	let selectedFile: any = null;

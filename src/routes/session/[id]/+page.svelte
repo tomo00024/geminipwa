@@ -68,7 +68,6 @@
 		const isFirstPost = lastProcessedLogCount === 0 && currentLogCount > 0;
 
 		if (hasSessionChanged || isFirstPost) {
-			console.log('ルール解析の実行条件を満たしました。処理を実行します。');
 			chatSessionStore.init($currentSession);
 			initializeAndStoreImageRules($currentSession);
 			lastProcessedSessionId = currentId;
