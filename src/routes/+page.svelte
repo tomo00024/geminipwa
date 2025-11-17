@@ -1,13 +1,14 @@
 <!-- src/routes/+page.svelte -->
 
 <script lang="ts">
-	import { sessions } from '$lib/stores';
+	import { sessions, appSettings } from '$lib/stores';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { createNewSession } from '$lib/utils';
 	import { onDestroy } from 'svelte';
 	import { tick } from 'svelte';
 	import PublishModal from '$lib/components/PublishModal.svelte';
+
 	// --- UIの状態管理用変数 ---
 	let isUploadMode = false;
 	let isModalOpen = false;
@@ -107,7 +108,11 @@
 			alert('エラー: 対象のセッションが見つかりませんでした。');
 			return;
 		}
-
+		// ▼▼▼ ここでストアを更新し、次回のために作者名を記憶させる ▼▼▼
+		appSettings.update((settings) => ({
+			...settings,
+			lastUsedAuthorName: event.detail.authorName || ''
+		}));
 		isSubmitting = true;
 
 		try {
@@ -161,16 +166,6 @@
 	function handleUploadSelect(): void {
 		closeDataLinkModal();
 		isUploadMode = true; // アップロードモードに移行
-	}
-
-	/**
-	 * モーダルで「ダウンロード」が選択されたときの処理
-	 */
-	function handleDownloadSelect(): void {
-		// 現時点では未実装のアラートを出す
-		alert('この機能はまだ実装されていません。');
-		// 必要であればモーダルを閉じる
-		// closeDataLinkModal();
 	}
 </script>
 
@@ -387,8 +382,8 @@
 				</button>
 
 				<!-- ダウンロード -->
-				<button
-					on:click={handleDownloadSelect}
+				<a
+					href="{base}/public"
 					class="flex w-full cursor-pointer items-start rounded-lg border p-4 text-left transition hover:bg-gray-50"
 				>
 					<div class="mr-4 text-2xl">↓</div>
@@ -398,7 +393,7 @@
 							サーバーに保存されているセッションを選び、アプリに読み込みます。
 						</p>
 					</div>
-				</button>
+				</a>
 			</div>
 
 			<!-- アクションボタン -->

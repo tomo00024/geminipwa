@@ -1,4 +1,4 @@
-// src/routes/upload/+server.ts
+// src/routes/api/upload/+server.ts
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { put } from '@vercel/blob';
@@ -13,7 +13,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const uploaderId = session.user.id;
 
 	const body = await request.json();
-	const { sessionData, publishScope, title, description, imageUrl, expiresAt } = body;
+	const { sessionData, publishScope, title, description, imageUrl, expiresAt, authorName } = body;
 
 	if (!sessionData || !title || !publishScope) {
 		throw error(400, 'Bad Request: 必須項目が不足しています。');
@@ -35,7 +35,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const fileId = uuidv4();
 		await sql`
 			INSERT INTO files (
-				id, title, description, imageUrl,
+				id, title, description, imageUrl, authorName,
 				fileName, blobUrl, pathname, contentType, size,
 				expiresAt, uploaderId, visibility
 			) VALUES (

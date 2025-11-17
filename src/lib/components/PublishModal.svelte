@@ -1,6 +1,7 @@
 <!-- src/lib/components/PublishModal.svelte -->
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
+	import { appSettings } from '$lib/stores';
 
 	// busy状態のみを親から受け取るように変更
 	export let busy = false;
@@ -13,7 +14,8 @@
 	let description = '';
 	let imageUrl = '';
 	let expiresAt = '';
-
+	// appSettingsストアから読み込んだ前回の作者名で初期化する
+	let authorName = $appSettings.lastUsedAuthorName || '';
 	// ★ 修正点 2: モーダル本体の要素を束縛する
 	let modalElement: HTMLDivElement;
 
@@ -32,7 +34,8 @@
 			title,
 			description,
 			imageUrl: imageUrl || null,
-			expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null
+			expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
+			authorName: authorName || null
 		});
 	}
 
@@ -70,6 +73,16 @@
 					bind:value={title}
 					class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
 					required
+				/>
+			</div>
+			<div>
+				<label for="authorName" class="block text-sm font-medium text-gray-700">作者名</label>
+				<input
+					type="text"
+					id="authorName"
+					bind:value={authorName}
+					class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+					placeholder="公開される名前 (空欄可)"
 				/>
 			</div>
 			<div>

@@ -179,6 +179,7 @@ export interface AppSettings {
 	apiErrorHandling: ApiErrorHandlingSettings;
 	assist: AssistSettings;
 	generation: GenerationSettings;
+	lastUsedAuthorName?: string;
 }
 
 /**
