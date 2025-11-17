@@ -4,7 +4,10 @@
 	// 作成したモーダルコンポーネントをインポート
 	import FileDetailModal from '$lib/components/FileDetailModal.svelte';
 
-	export let data../../import/$types.js;
+	import type { PageData } from './$types';
+
+	// ★ 修正点 2: 正しい構文でdataプロパティを型付け
+	export let data: PageData;
 
 	// モーダル表示のための状態変数
 	let selectedFile: any = null;
