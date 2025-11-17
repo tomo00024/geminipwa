@@ -7,6 +7,7 @@
 	 * この `data` プロパティを通じて自動的に受け取ることができます。
 	 */
 	export let data;
+	console.log('--- [BROWSER LOG] Data received by the page component ---', data);
 
 	function handleDownload(fileId: string) {
 		alert(`ID: ${fileId} のファイルをダウンロードします。(機能は未実装です)`);
