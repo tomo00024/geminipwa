@@ -1,7 +1,7 @@
 // src/routes/import/+page.server.ts
 
 import { createPool } from '@vercel/postgres';
-import type { PageServerLoad } from './$types';
+import type { PageServerLoad } from '../api/import/$types';
 import { POSTGRES_URL } from '$env/static/private';
 
 export const load: PageServerLoad = async () => {

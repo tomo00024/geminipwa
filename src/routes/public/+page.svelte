@@ -4,7 +4,7 @@
 	// 作成したモーダルコンポーネントをインポート
 	import FileDetailModal from '$lib/components/FileDetailModal.svelte';
 
-	import type { PageData } from './$types';
+	import type { PageData } from '../api/import/$types';
 
 	// ★ 修正点 2: 正しい構文でdataプロパティを型付け
 	export let data: PageData;
