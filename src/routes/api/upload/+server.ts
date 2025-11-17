@@ -39,8 +39,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				fileName, blobUrl, pathname, contentType, size,
 				expiresAt, uploaderId, visibility
 			) VALUES (
-				${fileId}, ${title}, ${description}, ${imageUrl},
-				${finalFileName}, -- ★ 変更点: 作成した変数を使う
+				${fileId}, ${title}, ${description}, ${imageUrl}, ${authorName},
+				${finalFileName},
                 ${blob.url}, ${blob.pathname}, ${blob.contentType}, ${fileSize},
 				${expiresAt}, ${uploaderId}, 'public'
 			)
