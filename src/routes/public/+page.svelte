@@ -11,6 +11,20 @@
 	function handleDownload(fileId: string) {
 		alert(`ID: ${fileId} のファイルをダウンロードします。(機能は未実装です)`);
 	}
+
+	/**
+	 * Markdown形式の画像リンクからURLを抽出する関数。
+	 * もしMarkdown形式でなければ、元の文字列をそのまま返す。
+	 * @param urlString - URLを含む可能性のある文字列
+	 */
+	function extractImageUrl(urlString: string): string {
+		if (typeof urlString !== 'string') {
+			return '';
+		}
+		// 正規表現を使って ![alt text](URL) の形式から URL 部分を抜き出す
+		const match = urlString.match(/!\[.*?\]\((.*?)\)/);
+		return match ? match[1] : urlString;
+	}
 </script>
 
 <div class="mx-auto max-w-4xl p-4 sm:p-6">
@@ -47,11 +61,11 @@
 			{#each data.files as file (file.id)}
 				<div class="rounded-lg border bg-white p-4 transition-shadow hover:shadow-md">
 					<!-- ... 以下のHTML構造は変更ありません ... -->
-					<div class="flex flex-col gap-4 sm:flex-row">
+					<div class="flex flex-row gap-4">
 						{#if file.imageUrl}
 							<div class="flex-shrink-0">
 								<img
-									src={file.imageUrl}
+									src={extractImageUrl(file.imageUrl)}
 									alt="{file.title}のサムネイル"
 									class="h-32 w-full rounded-md object-cover sm:h-full sm:w-40"
 								/>
