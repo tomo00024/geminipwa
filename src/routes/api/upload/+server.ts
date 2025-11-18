@@ -13,7 +13,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const uploaderId = session.user.id;
 
 	const body = await request.json();
-	// `title` はモーダルで編集された新しいタイトル
 	const { sessionData, publishScope, title, description, imageUrl, expiresAt, authorName } = body;
 
 	if (!sessionData || !title || !publishScope) {
@@ -30,7 +29,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			contentType: 'application/json'
 		});
 
-		// ★ 変更点: ファイル名をsessionData.titleではなく、リクエストの `title` を使うように変更
 		const finalFileName = `${title || 'untitled'}.json`;
 
 		const fileId = uuidv4();

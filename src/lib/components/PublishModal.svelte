@@ -5,13 +5,11 @@
 
 	// busy状態のみを親から受け取るように変更
 	export let busy = false;
-	// ★ 変更点 1: 親から初期タイトルを受け取るプロパティを追加
 	export let initialTitle = '';
 
 	// 親コンポーネントにイベントを伝えるための仕組み
 	const dispatch = createEventDispatcher();
 
-	// ★ 変更点 2: フォームの入力値を保持する変数の初期値にinitialTitleを設定
 	let title = initialTitle;
 	let description = '';
 	let imageUrl = '';

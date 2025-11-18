@@ -1,4 +1,3 @@
-// src/auth.ts
 import { SvelteKitAuth } from '@auth/sveltekit';
 import Google from '@auth/sveltekit/providers/google';
 import { AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, AUTH_SECRET } from '$env/static/private';
@@ -13,14 +12,15 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
 	secret: AUTH_SECRET,
 	trustHost: true,
 
-	// ★ ここから下の callbacks ブロックを丸ごと追加してください
 	callbacks: {
 		// JWTが作成・更新されるたびに実行される
-		async jwt({ token, user }) {
-			// userオブジェクトが存在する場合（＝サインイン時）
-			if (user) {
-				// tokenにIDを格納する
-				token.id = user.id;
+		async jwt({ token, user, account }) {
+			// "account" を引数に追加
+			// ログインフローの初回時のみ account オブジェクトが存在する
+			if (account && user) {
+				// Auth.jsが生成する一時的なIDではなく、
+				// プロバイダー(Google)から提供される永続的なIDをtokenに格納する
+				token.id = account.providerAccountId;
 			}
 			return token;
 		},

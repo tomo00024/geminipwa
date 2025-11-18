@@ -1,11 +1,9 @@
 // src/routes/api/import/[id]/+server.ts
 import { error, json } from '@sveltejs/kit';
-// ★ 1. createPool と POSTGRES_URL をインポートする
 import { createPool } from '@vercel/postgres';
 import { POSTGRES_URL } from '$env/static/private';
 import type { RequestHandler } from './$types';
 
-// ★ 2. 接続情報を使ってデータベースプールを作成する
 const pool = createPool({
 	connectionString: POSTGRES_URL
 });
@@ -14,7 +12,6 @@ export const GET: RequestHandler = async ({ params }) => {
 	const fileId = params.id;
 
 	try {
-		// ★ 3. sql を pool.sql に変更する
 		const { rows } = await pool.sql`
             SELECT
                 bloburl AS "blobUrl"
@@ -29,7 +26,6 @@ export const GET: RequestHandler = async ({ params }) => {
 			throw error(404, 'Not Found: 指定されたファイルが見つかりません。');
 		}
 
-		// ★ 3. sql を pool.sql に変更する
 		await pool.sql`
             UPDATE files
             SET downloadcount = downloadcount + 1

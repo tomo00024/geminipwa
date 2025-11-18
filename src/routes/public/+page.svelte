@@ -1,13 +1,12 @@
-<!-- src/routes/import/+page.svelte -->
+<!-- src/routes/public/+page.svelte -->
 <script lang="ts">
 	import { base } from '$app/paths';
-	// 作成したモーダルコンポーネントをインポート
 	import FileDetailModal from '$lib/components/FileDetailModal.svelte';
 
 	import type { PageData } from '../api/import/$types';
 
-	// ★ 修正点 2: 正しい構文でdataプロパティを型付け
 	export let data: PageData;
+	console.log('--- Page Component Data ---', data); // ▼▼▼ ここに追加 ▼▼▼
 
 	// モーダル表示のための状態変数
 	let selectedFile: any = null;
@@ -23,6 +22,13 @@
 	function closeModal() {
 		isModalOpen = false;
 		selectedFile = null;
+	}
+
+	// モーダルから削除イベントを受け取ったとき
+	function handleFileDeleted(event: CustomEvent<string>) {
+		const deletedFileId = event.detail;
+		// 削除されたファイルをリストから除外してUIを更新
+		data.files = data.files.filter((file) => file.id !== deletedFileId);
 	}
 
 	/**
@@ -67,7 +73,7 @@
 			<div class="py-16 text-center text-gray-500">まだ公開されているセッションがありません。</div>
 		{:else}
 			{#each data.files as file (file.id)}
-				<!-- ★ 変更点: カード全体をクリック可能にし、モーダルを開くようにする -->
+				<!-- カード全体をクリック可能にし、モーダルを開くようにする -->
 				<!-- svelte-ignore a11y-no-static-element-interactions -->
 				<!-- svelte-ignore a11y-click-events-have-key-events -->
 				<div
@@ -102,7 +108,7 @@
 
 							<p class="mt-2 flex-grow text-sm text-gray-600">{file.description}</p>
 
-							<!-- ★ 変更点: メタ情報とボタンのレイアウトを調整 -->
+							<!-- メタ情報とボタンのレイアウトを調整 -->
 							<div class="mt-3 flex items-center justify-between">
 								<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
 									<span>👤 {file.authorName}</span>
@@ -110,7 +116,7 @@
 									<span>↓ {file.downloadCount}</span>
 									<span>{new Date(file.uploadedAt).toLocaleDateString()}</span>
 								</div>
-								<!-- ★ 変更点: カード内のダウンロードボタンを削除 -->
+								<!-- カード内のダウンロードボタンを削除 -->
 							</div>
 						</div>
 					</div>
@@ -120,7 +126,11 @@
 	</div>
 </div>
 
-<!-- ★ 追加: isModalOpenがtrueの時にモーダルコンポーネントを描画する -->
 {#if isModalOpen && selectedFile}
-	<FileDetailModal file={selectedFile} on:close={closeModal} />
+	<FileDetailModal
+		file={selectedFile}
+		session={data.session}
+		on:close={closeModal}
+		on:deleted={handleFileDeleted}
+	/>
 {/if}
