@@ -163,39 +163,33 @@ function _findPotentialUrlLines(responseText: string, rule: ImageCorrectionRule)
  * @returns 再構築されたMarkdown文字列。失敗した場合はnull。
  */
 function _reconstructMarkdownFromLine(line: string, rule: ImageCorrectionRule): string | null {
-	console.log(`[_reconstructMarkdownFromLine] Processing line: "${line}"`);
+	console.log(`[_reconstructMarkdownFromLine] START Processing line: "${line}"`);
 
-	// ステップ1: パスの開始位置を特定する
-	const domainMatch = line.match(/[a-zA-Z0-9-]+\.(?:netlify\.app|vercel\.app|github\.io)/);
-	if (!domainMatch || domainMatch.index === undefined) {
-		console.warn(`[Reconstructor] Could not identify domain in line. Skipping.`);
-		return null;
-	}
-	const pathStartIndex = domainMatch.index + domainMatch[0].length;
+	// --- Step 1: 曖昧な拡張子を判定してそれ以降を除去する ---
+	const textAfterDomain = line;
 
-	// ステップ2: パスの終了位置を、より精密に特定する
-	const textAfterDomain = line.substring(pathStartIndex);
+	// 検索開始位置を「最後のスラッシュより後」にする
+	const lastSlashIndex = textAfterDomain.lastIndexOf('/');
+	const searchStartIndex = lastSlashIndex !== -1 ? lastSlashIndex + 1 : 0;
+
+	const pathStartIndex = 0;
 	const terminatorIndices: number[] = [];
 
-	// ドメイン以降で最初に出現する拡張子または閉じ括弧を探す
-	// 曖昧検索用の拡張子パターンを生成する
+	console.log(`[DEBUG] Step 1: Fuzzy extension patterns generation (Searching from index ${searchStartIndex})`);
+
 	const fuzzyPatterns = new Set<string>();
 	for (const extWithDot of rule.extensions) {
-		// 元の拡張子（ドットあり・なし）を追加
 		fuzzyPatterns.add(extWithDot);
 		const ext = extWithDot.replace('.', '');
 		if (ext) {
 			fuzzyPatterns.add(ext);
 		}
-
 		if (ext.length < 1) continue;
 
-		// パターン1: 「ドット + 拡張子内の任意の1文字」
 		for (const char of ext) {
 			fuzzyPatterns.add(`.${char}`);
 		}
 
-		// パターン2: 「拡張子内の任意の2文字（順序維持）」
 		if (ext.length >= 2) {
 			for (let i = 0; i < ext.length; i++) {
 				for (let j = i + 1; j < ext.length; j++) {
@@ -207,63 +201,106 @@ function _reconstructMarkdownFromLine(line: string, rule: ImageCorrectionRule): 
 
 	// 生成した全パターンと閉じ括弧について、出現位置を検索する
 	for (const pattern of fuzzyPatterns) {
-		const index = textAfterDomain.indexOf(pattern);
+		const index = textAfterDomain.indexOf(pattern, searchStartIndex);
 		if (index !== -1) {
 			terminatorIndices.push(index);
 		}
 	}
-	const parenIndex = textAfterDomain.indexOf(')');
-	if (parenIndex !== -1) terminatorIndices.push(parenIndex);
+
+	const parenIndex = textAfterDomain.indexOf(')', searchStartIndex);
+	if (parenIndex !== -1) {
+		terminatorIndices.push(parenIndex);
+	} else {
+		const fallbackParen = textAfterDomain.indexOf(')');
+		if (fallbackParen !== -1) terminatorIndices.push(fallbackParen);
+	}
 
 	// 終端が見つかればその位置まで、なければ文字列の最後までをパス領域とする
-	const pathEndIndex =
-		terminatorIndices.length > 0 ? pathStartIndex + Math.min(...terminatorIndices) : line.length;
+	const minTerminatorIndex = terminatorIndices.length > 0 ? Math.min(...terminatorIndices) : line.length;
+	const pathEndIndex = minTerminatorIndex;
+
+	console.log(`[DEBUG] pathStartIndex: ${pathStartIndex}, pathEndIndex: ${pathEndIndex}`);
 
 	if (pathStartIndex >= pathEndIndex) {
 		console.warn(`[Reconstructor] Invalid path area found. Skipping line.`);
 		return null;
 	}
 
-	const garbledPath = line.substring(pathStartIndex, pathEndIndex);
-	console.log(`[Reconstructor] Extracted garbled path area: "${garbledPath}"`);
+	// 【変更】書き換え可能にするため let に変更
+	let validPathString = line.substring(pathStartIndex, pathEndIndex);
+	console.log(`[DEBUG] validPathString (TRIMMED RESULT): "${validPathString}"`);
 
-	// ステップ3: パスをセグメントに分割し、それぞれを正規化して解読する
-	const garbledSegments = garbledPath.split(/[\/\\]+/).filter((s) => s.trim());
+
+	// --- 安全装置: ドメイン直後のスラッシュ抜け補正 ---
+	// .app などの後にスラッシュがなく、文字が続いている場合にスラッシュを挿入する
+	const domainTlds = ['.app', '.com', '.net', '.org', '.io', '.dev']; // 必要に応じて追加
+	for (const tld of domainTlds) {
+		if (validPathString.includes(tld)) {
+			// 正規表現: TLDの直後に「/」以外の文字がある場合、間に「/」を入れる
+			// 例: ".appリーシェ" -> ".app/リーシェ"
+			// $1: .app, $2: 直後の文字(スラッシュ、空白、引用符以外)
+			const regex = new RegExp(`(${tld.replace('.', '\\.')})([^/\\s"'])`, 'g');
+			if (regex.test(validPathString)) {
+				console.log(`[DEBUG] Missing slash detected after "${tld}". Fixing...`);
+				validPathString = validPathString.replace(regex, '$1/$2');
+				console.log(`[DEBUG] Fixed validPathString: "${validPathString}"`);
+			}
+		}
+	}
+
+
+	// --- Step 2: バラバラにしてパースしていく ---
+	console.log(`[DEBUG] Step 2: Parse segments`);
+
+	const rawSegments = validPathString.split(/[\/\\]+/);
 	const decodedSegments: string[] = [];
 
-	for (const segment of garbledSegments) {
-		if (!segment) continue;
-		let bestMatch = { keyword: '', distance: Infinity };
+	const extPattern = new RegExp(`(${rule.extensions.map(e => e.replace('.', '\\.')).join('|')})$`, 'i');
 
-		const normalizedSegment = _normalizeString(segment);
+	for (const segment of rawSegments) {
+		if (!segment || segment.trim().length === 0) continue;
+
+		// セグメントから拡張子以降やMarkdownの閉じ括弧などのゴミを除去する
+		let cleanSegment = segment.replace(extPattern, '');
+		cleanSegment = cleanSegment.replace(/["')]+$/, '');
+
+		if (!cleanSegment) continue;
+
+		const normalizedSegment = _normalizeString(cleanSegment);
+		let bestMatch = { keyword: '', distance: Infinity };
 
 		for (const keyword of rule.pathKeywords) {
 			const normalizedKeyword = _normalizeString(keyword);
 			const distance = _calculateLevenshtein(normalizedSegment, normalizedKeyword);
+
 			if (distance < bestMatch.distance) {
 				bestMatch = { keyword: keyword, distance: distance };
 			}
 		}
 
+		// 閾値判定
 		const threshold = Math.ceil(_normalizeString(bestMatch.keyword).length / 4);
+
 		if (bestMatch.distance <= threshold) {
-			decodedSegments.push(bestMatch.keyword);
-		} else {
-			console.warn(
-				`[Reconstructor] Segment "${segment}" (normalized: "${normalizedSegment}") could not be decoded confidently (best match: "${bestMatch.keyword}", dist: ${bestMatch.distance}, threshold: ${threshold}).`
-			);
+			if (!decodedSegments.includes(bestMatch.keyword)) {
+				decodedSegments.push(bestMatch.keyword);
+				console.log(`[DEBUG] -> MATCH: "${bestMatch.keyword}"`);
+			}
 		}
 	}
 
 	if (decodedSegments.length === 0) {
-		console.warn(`[Reconstructor] No segments could be decoded. Skipping line.`);
+		console.warn(`[Reconstructor] No valid keywords found in line. Skipping.`);
 		return null;
 	}
+
 	console.log('[Reconstructor] Decoded segments:', decodedSegments);
 
-	// ステップ4: 拡張子を決定し、URLを再構築する
+	// 3. 拡張子を決定
 	const foundExtension =
 		rule.extensions.find((ext) => line.includes(ext.replace('.', ''))) || rule.extensions[0];
+
+	// 4. URL再構築
 	const urlPath = decodedSegments.join('/') + foundExtension;
 	const fullUrl = rule.baseUrl + urlPath;
 	const finalMarkdown = rule.markdownTemplate.start + fullUrl + rule.markdownTemplate.end;
@@ -271,7 +308,6 @@ function _reconstructMarkdownFromLine(line: string, rule: ImageCorrectionRule): 
 	console.log(`[Reconstructor] Success -> "${finalMarkdown}"`);
 	return finalMarkdown;
 }
-
 /**
  * 文字列を曖昧検索のために正規化するヘルパー関数。
  * - **ひらがなをカタカナに変換**
@@ -387,29 +423,34 @@ function _parseRuleFromText(prompt: string): ImageCorrectionRule | null {
 export function correctImageMarkdownInText(responseText: string): string {
 	const rule = getActiveImageRule();
 	if (!rule) {
-		return responseText; // ルールがなければ何もしない
+		return responseText;
 	}
 
-	// 1. テキスト全体から、補正対象の可能性がある行を「一度に」全て見つけ出す
+	// 1. テキスト全体から、補正対象の可能性がある行リストを取得（既存ロジック維持）
 	const potentialLines = _findPotentialUrlLines(responseText, rule);
 	if (potentialLines.length === 0) {
-		return responseText; // 候補がなければ何もしない
+		return responseText;
 	}
 
-	let newText = responseText;
-	let textChanged = false;
+	// 2. テキストを行ごとに分割する
+	const lines = responseText.split('\n');
 
-	// 2. 見つけ出した候補行だけをループ処理する
-	for (const line of potentialLines) {
-		// 3. 1行を再構築してみる
-		const reconstructed = _reconstructMarkdownFromLine(line, rule);
+	// 3. 行ごとにマップ処理を行い、対象行であれば丸ごと置換する
+	const processedLines = lines.map((line) => {
+		// 現在の行が補正対象の候補に含まれているか確認
+		if (potentialLines.includes(line)) {
+			// 既存のパース・再構築ロジックを呼び出す
+			const reconstructed = _reconstructMarkdownFromLine(line, rule);
 
-		// 4. 成功したら、元のテキストの該当行を置換する
-		if (reconstructed) {
-			newText = newText.replace(line, reconstructed);
-			textChanged = true;
+			// 成功したら、元の行を捨てて「再構築された文字列」を返す（行の完全置換）
+			if (reconstructed) {
+				return reconstructed;
+			}
 		}
-	}
+		// 対象外、または再構築失敗なら元の行をそのまま返す
+		return line;
+	});
 
-	return textChanged ? newText : responseText;
+	// 4. 全行を結合して返す
+	return processedLines.join('\n');
 }
