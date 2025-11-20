@@ -172,6 +172,15 @@ export interface GenerationSettings {
 	maxOutputTokens: number | null;
 	thinkingBudget: number | null;
 }
+
+/**
+ * バックアップ設定
+ */
+export interface BackupSettings {
+	isEnabled: boolean; // Google Driveバックアップ機能自体が有効か
+	autoBackup: boolean; // 自動バックアップが有効か
+	lastBackupAt: string | null; // 最後のバックアップ日時 (ISO string)
+}
 export interface AppSettings {
 	apiKeys: ApiKey[];
 	activeApiKeyId: string | null;
@@ -193,6 +202,7 @@ export interface AppSettings {
 	apiErrorHandling: ApiErrorHandlingSettings;
 	assist: AssistSettings;
 	generation: GenerationSettings;
+	backup: BackupSettings;
 	lastUsedAuthorName?: string;
 }
 

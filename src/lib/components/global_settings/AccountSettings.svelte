@@ -5,8 +5,105 @@
 	import Section from '$lib/components/ui/Section.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Toggle from '$lib/components/ui/Toggle.svelte';
+	import { appSettings, sessions } from '$lib/stores';
 
-	let driveSyncEnabled = false;
+	let isDeleting = false;
+	let isBackingUp = false;
+	let backupMessage = '';
+
+	async function handleDeleteAccount() {
+		if (
+			!confirm(
+				'本当にアカウントを削除しますか？\nこの操作は取り消せません。\nサーバー上のすべてのデータが削除されます。'
+			)
+		) {
+			return;
+		}
+
+		isDeleting = true;
+		try {
+			const response = await fetch('/api/account', {
+				method: 'DELETE'
+			});
+
+			if (!response.ok) {
+				const data = await response.json();
+				alert(`エラーが発生しました: ${data.message || '不明なエラー'}`);
+				return;
+			}
+
+			alert('アカウントが削除されました。');
+			await signOut();
+		} catch (e) {
+			console.error(e);
+			alert('通信エラーが発生しました。');
+		} finally {
+			isDeleting = false;
+		}
+	}
+
+	async function handleBackupNow() {
+		if (!$sessions || $sessions.length === 0) {
+			alert('バックアップするセッションデータがありません。');
+			return;
+		}
+
+		isBackingUp = true;
+		backupMessage = 'バックアップ中...';
+
+		try {
+			const response = await fetch('/api/backup/google-drive', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ sessions: $sessions })
+			});
+
+			if (!response.ok) {
+				const err = await response.json();
+				throw new Error(err.message || 'バックアップに失敗しました');
+			}
+
+			const result = await response.json();
+
+			appSettings.update((s) => ({
+				...s,
+				backup: {
+					...s.backup,
+					lastBackupAt: result.backupAt
+				}
+			}));
+
+			backupMessage = 'バックアップ完了';
+			setTimeout(() => (backupMessage = ''), 3000);
+		} catch (e: any) {
+			console.error(e);
+			alert(`エラー: ${e.message}`);
+			backupMessage = '';
+		} finally {
+			isBackingUp = false;
+		}
+	}
+
+	// 権限チェックのための派生状態
+	$: scope = $page.data.session?.user?.scope || '';
+	$: hasDriveScope = scope.includes('https://www.googleapis.com/auth/drive.file');
+	$: isPermissionMissing = $appSettings.backup.isEnabled && !hasDriveScope;
+
+	function handleReconnect() {
+		const options = {
+			callbackUrl: '/settings',
+			redirect: true
+		};
+		const authParams = {
+			scope: 'openid profile email https://www.googleapis.com/auth/drive.file',
+			prompt: 'consent',
+			access_type: 'offline',
+			response_type: 'code'
+		};
+		signIn('google', options, authParams);
+	}
 </script>
 
 <!-- アカウント連携 -->
@@ -23,7 +120,9 @@
 			<p class="text-sm text-gray-400">
 				アカウントを削除すると、サーバーにアップロードしたすべてのセッション履歴が完全に削除され、元に戻すことはできません。
 			</p>
-			<Button variant="danger">アカウントを完全に削除する</Button>
+			<Button variant="danger" on:click={handleDeleteAccount} disabled={isDeleting}>
+				{isDeleting ? '削除中...' : 'アカウントを完全に削除する'}
+			</Button>
 		</div>
 	{:else}
 		<div class="space-y-3">
@@ -45,17 +144,48 @@
 			id="drive-sync-enabled"
 			disabled={!$page.data.session}
 			label="Google Driveへの自動バックアップを有効にする"
-			bind:checked={driveSyncEnabled}
+			bind:checked={$appSettings.backup.isEnabled}
 		/>
 
 		{#if !$page.data.session}
 			<p class="pl-6 text-sm text-gray-400">
 				この機能を利用するには、まずGoogleアカウントでログインしてください。
 			</p>
-		{:else}
-			<div class="pl-6">
-				<p class="text-sm">最終同期: 5分前</p>
-				<Button class="mt-2">今すぐ同期</Button>
+		{:else if isPermissionMissing}
+			<div
+				class="rounded border border-yellow-200 bg-yellow-50 p-3 pl-6 dark:border-yellow-800 dark:bg-yellow-900/20"
+			>
+				<p class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+					⚠ バックアップに必要な権限が不足しています
+				</p>
+				<p class="mt-1 mb-2 text-xs text-yellow-700 dark:text-yellow-300">
+					Google Driveへのアクセスを許可してください。
+				</p>
+				<Button size="sm" variant="secondary" onclick={handleReconnect}>
+					権限を付与する (再接続)
+				</Button>
+			</div>
+		{:else if $appSettings.backup.isEnabled}
+			<div class="space-y-2 pl-6">
+				<div class="text-sm text-gray-400">
+					{#if $appSettings.backup.lastBackupAt}
+						最終同期: {new Date($appSettings.backup.lastBackupAt).toLocaleString()}
+					{:else}
+						同期履歴なし
+					{/if}
+				</div>
+				<div class="flex items-center gap-2">
+					<Button size="sm" onclick={handleBackupNow} disabled={isBackingUp}>
+						{#if isBackingUp}
+							同期中...
+						{:else}
+							今すぐ同期
+						{/if}
+					</Button>
+					{#if backupMessage}
+						<span class="text-sm text-green-500">{backupMessage}</span>
+					{/if}
+				</div>
 			</div>
 		{/if}
 	</div>

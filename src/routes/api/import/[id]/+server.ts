@@ -1,12 +1,18 @@
 import { error, json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
+import { checkRateLimit } from '$lib/server/rateLimit';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ params, locals }) => {
+export const GET: RequestHandler = async ({ params, locals, getClientAddress }) => {
 	// `locals` を受け取る
 	const fileId = params.id;
 	const session = await locals.auth(); // ユーザーセッションを取得
 	const currentUserId = session?.user?.id;
+
+	// レート制限の適用
+	// IPアドレスベースで制限: 1分間に10回まで
+	const clientIp = getClientAddress();
+	await checkRateLimit(`ip:${clientIp}`, 10, 60);
 
 	try {
 		// ファイル情報を取得する際に、権限チェックに必要なカラムも取得

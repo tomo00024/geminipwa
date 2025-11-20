@@ -6,38 +6,11 @@
 	import ChatBubble from './ChatBubble.svelte';
 
 	export let handleRetry: (userMessageId: string) => Promise<void>;
+	export let limit: number = 20;
 
-	$: displayableLogs = (() => {
-		if (!$chatSessionStore.session || !$chatSessionStore.session.logs.length) {
-			return [];
-		}
-		const allLogs = $chatSessionStore.session.logs;
-		const logMap = new Map(allLogs.map((log) => [log.id, log]));
-		const filteredLogs: Log[] = [];
-
-		let currentLog = allLogs.find((log) => log.parentId === null);
-		if (!currentLog) return [];
-
-		while (currentLog) {
-			filteredLogs.push(currentLog);
-			if (currentLog.activeChildId) {
-				const nextLog = logMap.get(currentLog.activeChildId);
-				if (nextLog) {
-					currentLog = nextLog;
-				} else {
-					break;
-				}
-			} else {
-				break;
-			}
-		}
-		if ($chatSessionStore.session.hideFirstUserMessage) {
-			if (filteredLogs.length > 0 && filteredLogs[0].speaker === 'user') {
-				return filteredLogs.slice(1);
-			}
-		}
-		return filteredLogs;
-	})();
+	$: paginatedLogs = $chatSessionStore.displayableLogs
+		? $chatSessionStore.displayableLogs.slice(-limit)
+		: [];
 
 	// イベントハンドラ
 	function onStartEditing(event: CustomEvent) {
@@ -84,7 +57,7 @@
 			? `${$appSettings.ui.chatFontSize}px`
 			: 'initial'}"
 	>
-		{#each displayableLogs as log (log.id)}
+		{#each paginatedLogs as log (log.id)}
 			<ChatBubble
 				{log}
 				isEditing={$chatSessionStore.editingMessageId === log.id}

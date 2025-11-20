@@ -33,7 +33,12 @@ const defaultAppSettings: AppSettings = {
 	ui: { ...defaultUiSettings },
 	apiErrorHandling: { ...defaultApiErrorHandlingSettings },
 	assist: { ...defaultAssistSettings },
-	generation: { ...defaultGenerationSettings }
+	generation: { ...defaultGenerationSettings },
+	backup: {
+		isEnabled: false,
+		autoBackup: false,
+		lastBackupAt: null
+	}
 };
 
 // 2. localStorageから初期値を読み込む
@@ -89,6 +94,10 @@ if (storedAppSettingsJSON) {
 			dummyModelPrompt: {
 				...defaultAppSettings.dummyModelPrompt,
 				...(parsedSettings.dummyModelPrompt || {})
+			},
+			backup: {
+				...defaultAppSettings.backup,
+				...(parsedSettings.backup || {})
 			}
 		};
 	} catch (e) {

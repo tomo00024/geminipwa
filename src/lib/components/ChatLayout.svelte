@@ -9,6 +9,7 @@
 	export let isLoading: boolean;
 	export let handleSubmit: () => Promise<void>;
 	export let sessionTitle: string;
+	export let loadPrevious: (() => Promise<void> | void) | undefined = undefined;
 
 	$: currentSessionId = $page.params.id;
 
@@ -24,6 +25,7 @@
 	// スクロール制御用
 	let scrollContainer: HTMLDivElement;
 	let saveTimeout: any;
+	let isLoadingPrevious = false;
 
 	async function startEditing() {
 		isEditing = true;
@@ -79,12 +81,30 @@
 		}
 	}
 
-	function handleScroll() {
+	async function handleScroll() {
 		if (saveTimeout) clearTimeout(saveTimeout);
 		// 連打防止：スクロールが止まってから保存
 		saveTimeout = setTimeout(() => {
 			saveScrollPosition();
 		}, 500);
+
+		// 無限スクロール (ページネーション)
+		if (scrollContainer && loadPrevious && !isLoadingPrevious) {
+			if (scrollContainer.scrollTop < 50) {
+				isLoadingPrevious = true;
+				const oldHeight = scrollContainer.scrollHeight;
+				const oldTop = scrollContainer.scrollTop; // 0に近いはずだが念のため
+
+				await loadPrevious();
+				await tick();
+
+				// スクロール位置の補正
+				const newHeight = scrollContainer.scrollHeight;
+				scrollContainer.scrollTop = newHeight - oldHeight + oldTop;
+
+				isLoadingPrevious = false;
+			}
+		}
 	}
 
 	// 画面遷移直前（DOMが消える前）に保存

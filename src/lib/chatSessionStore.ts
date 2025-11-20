@@ -10,6 +10,7 @@ export interface ChatSessionState {
 	session: Session | null;
 	editingMessageId: string | null;
 	editingText: string;
+	displayableLogs: Log[];
 }
 
 // _applyImageCorrection 関数を全面的に書き換える
@@ -19,10 +20,44 @@ function _applyImageCorrection(originalText: string): string {
 }
 
 function createChatSessionStore() {
+	// --- Helper Function ---
+	function computeDisplayableLogs(session: Session): Log[] {
+		if (!session.logs.length) return [];
+
+		const allLogs = session.logs;
+		const logMap = new Map(allLogs.map((log) => [log.id, log]));
+		const filteredLogs: Log[] = [];
+
+		let currentLog = allLogs.find((log) => log.parentId === null);
+		if (!currentLog) return [];
+
+		while (currentLog) {
+			filteredLogs.push(currentLog);
+			if (currentLog.activeChildId) {
+				const nextLog = logMap.get(currentLog.activeChildId);
+				if (nextLog) {
+					currentLog = nextLog;
+				} else {
+					break;
+				}
+			} else {
+				break;
+			}
+		}
+
+		if (session.hideFirstUserMessage) {
+			if (filteredLogs.length > 0 && filteredLogs[0].speaker === 'user') {
+				return filteredLogs.slice(1);
+			}
+		}
+		return filteredLogs;
+	}
+
 	const { subscribe, update, set } = writable<ChatSessionState>({
 		session: null,
 		editingMessageId: null,
-		editingText: ''
+		editingText: '',
+		displayableLogs: []
 	});
 
 	// --- Public Methods (コンポーネントから呼び出す関数) ---
@@ -32,7 +67,8 @@ function createChatSessionStore() {
 			set({
 				session: sessionData,
 				editingMessageId: null,
-				editingText: ''
+				editingText: '',
+				displayableLogs: computeDisplayableLogs(sessionData)
 			});
 		},
 
@@ -92,11 +128,13 @@ function createChatSessionStore() {
 			update((s) => {
 				s.editingMessageId = null;
 				s.editingText = '';
-				if (s.session) s.session.logs = newLogs;
+				if (s.session) {
+					s.session.logs = newLogs;
+					s.displayableLogs = computeDisplayableLogs(s.session);
+				}
 				return s;
 			});
 		},
-		// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 修正箇所 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
 		/**
 		 * @param messageId 削除対象のメッセージID
@@ -151,7 +189,10 @@ function createChatSessionStore() {
 				return allSessions.map((s) => (s.id === state.session?.id ? { ...s, logs: newLogs } : s));
 			});
 			update((s) => {
-				if (s.session) s.session.logs = newLogs;
+				if (s.session) {
+					s.session.logs = newLogs;
+					s.displayableLogs = computeDisplayableLogs(s.session);
+				}
 				return s;
 			});
 		},
@@ -175,7 +216,10 @@ function createChatSessionStore() {
 				sessions.update((allSessions) => {
 					return allSessions.map((s) => (s.id === state.session?.id ? { ...s, logs: newLogs } : s));
 				});
-				if (state.session) state.session.logs = newLogs;
+				if (state.session) {
+					state.session.logs = newLogs;
+					state.displayableLogs = computeDisplayableLogs(state.session);
+				}
 				return state;
 			});
 		}

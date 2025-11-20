@@ -17,10 +17,12 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
 		async jwt({ token, user, account }) {
 			// "account" を引数に追加
 			// ログインフローの初回時のみ account オブジェクトが存在する
-			if (account && user) {
+			if (account) {
 				// Auth.jsが生成する一時的なIDではなく、
 				// プロバイダー(Google)から提供される永続的なIDをtokenに格納する
 				token.id = account.providerAccountId;
+				token.accessToken = account.access_token;
+				token.scope = account.scope;
 			}
 			return token;
 		},
@@ -29,6 +31,8 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
 			// tokenからIDを取り出して、セッションのuserオブジェクトに追加する
 			if (token.id && session.user) {
 				session.user.id = token.id as string;
+				session.user.accessToken = token.accessToken as string;
+				session.user.scope = token.scope as string;
 			}
 			return session;
 		}
