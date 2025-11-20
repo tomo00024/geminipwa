@@ -15,7 +15,7 @@
 		secondary: 'rounded bg-gray-200 px-3 py-2 text-gray-800 hover:bg-gray-300 text-sm',
 		danger: 'rounded bg-red-200 px-3 py-2 text-red-800 hover:bg-red-300 text-sm',
 		menu: 'rounded-full border border-btn-menu-border bg-btn-menu-bg px-3 py-1 text-btn-menu-text hover:border-btn-menu-hover-border hover:bg-btn-menu-hover-bg text-sm whitespace-nowrap',
-		blue: 'rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700'
+		blue: 'rounded-md bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300'
 	};
 </script>
 

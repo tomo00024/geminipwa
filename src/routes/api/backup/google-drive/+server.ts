@@ -1,6 +1,47 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
+const FOLDER_NAME = 'Gemini_App_Backups';
+
+async function getOrCreateFolder(accessToken: string): Promise<string> {
+    // 1. Search for folder
+    const searchRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id)`,
+        {
+            headers: { Authorization: `Bearer ${accessToken}` }
+        }
+    );
+
+    if (!searchRes.ok) {
+        throw new Error('Failed to search for folder');
+    }
+
+    const searchData = await searchRes.json();
+    if (searchData.files && searchData.files.length > 0) {
+        return searchData.files[0].id;
+    }
+
+    // 2. Create folder if not exists
+    const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            name: FOLDER_NAME,
+            mimeType: 'application/vnd.google-apps.folder'
+        })
+    });
+
+    if (!createRes.ok) {
+        throw new Error('Failed to create folder');
+    }
+
+    const createData = await createRes.json();
+    return createData.id;
+}
+
 export const POST: RequestHandler = async ({ request, locals }) => {
     const session = await locals.auth();
     // @ts-ignore: accessToken is added in auth.ts
@@ -16,14 +57,19 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         throw error(400, 'Bad Request: バックアップデータがありません。');
     }
 
-    const fileName = 'gemini-sessions-backup.json';
+    // Generate filename for today: gemini-backup-YYYY-MM-DD.json
+    const today = new Date().toISOString().split('T')[0];
+    const fileName = `gemini-backup-${today}.json`;
     const fileContent = JSON.stringify(sessions, null, 2);
     const fileType = 'application/json';
 
     try {
-        // 1. 既存のバックアップファイルを検索
+        // 0. Ensure folder exists
+        const folderId = await getOrCreateFolder(accessToken);
+
+        // 1. Check if today's backup file exists IN THAT FOLDER
         const searchResponse = await fetch(
-            `https://www.googleapis.com/drive/v3/files?q=name='${fileName}' and trashed=false&fields=files(id, name)`,
+            `https://www.googleapis.com/drive/v3/files?q=name='${fileName}' and '${folderId}' in parents and trashed=false&fields=files(id, name)`,
             {
                 headers: {
                     Authorization: `Bearer ${accessToken}`
@@ -45,11 +91,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
             : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
 
-        // 2. マルチパートアップロードの準備
-        const metadata = {
+        // 2. Prepare multipart upload
+        const metadata: any = {
             name: fileName,
             mimeType: fileType
         };
+
+        // Only add parents if creating a new file
+        if (!fileId) {
+            metadata.parents = [folderId];
+        }
 
         const boundary = '-------314159265358979323846';
         const delimiter = `\r\n--${boundary}\r\n`;
@@ -64,7 +115,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             fileContent +
             closeDelimiter;
 
-        // 3. ファイルの作成または更新
+        // 3. Create or Update file
         const uploadResponse = await fetch(url, {
             method: method,
             headers: {
@@ -88,11 +139,67 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         return json({
             success: true,
             fileId: result.id,
-            backupAt: new Date().toISOString()
+            backupAt: new Date().toISOString(),
+            fileName: fileName,
+            folderId: folderId
         });
     } catch (e: any) {
         console.error('Backup API Error:', e);
         if (e.status) throw e;
         throw error(500, 'バックアップ処理中に予期せぬエラーが発生しました。');
+    }
+};
+
+export const GET: RequestHandler = async ({ url, locals }) => {
+    const session = await locals.auth();
+    // @ts-ignore
+    const accessToken = session?.user?.accessToken || session?.accessToken;
+
+    if (!session || !accessToken) {
+        throw error(401, 'Unauthorized');
+    }
+
+    const listMode = url.searchParams.get('list') === 'true';
+    const fileId = url.searchParams.get('fileId');
+
+    try {
+        // Mode 1: List Backup Files
+        if (listMode) {
+            // Get folder ID first to filter by parent
+            const folderId = await getOrCreateFolder(accessToken);
+
+            const query = `name contains 'gemini-backup-' and '${folderId}' in parents and trashed=false`;
+            const fields = 'files(id, name, createdTime, modifiedTime, size)';
+            const response = await fetch(
+                `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}&orderBy=name desc`,
+                {
+                    headers: { Authorization: `Bearer ${accessToken}` }
+                }
+            );
+
+            if (!response.ok) throw error(500, 'Failed to list backups');
+            const data = await response.json();
+            return json(data);
+        }
+
+        // Mode 2: Get File Content
+        if (fileId) {
+            const response = await fetch(
+                `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+                {
+                    headers: { Authorization: `Bearer ${accessToken}` }
+                }
+            );
+
+            if (!response.ok) throw error(500, 'Failed to download backup');
+            const data = await response.json();
+            return json(data);
+        }
+
+        throw error(400, 'Invalid request parameters');
+    } catch (e: any) {
+        console.error('Backup API Error:', e);
+        if (e.status) throw e;
+        throw error(500, 'Failed to process request');
     }
 };

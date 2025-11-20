@@ -9,6 +9,8 @@
 	export let log: Log;
 	export let isEditing: boolean = false;
 	export let editingText: string = '';
+	export let displayMode: 'bubble' | 'transcript' = 'bubble';
+	export let showSpeakerName: boolean = true;
 
 	const dispatch = createEventDispatcher();
 
@@ -98,22 +100,40 @@
 	}
 
 	const isUser = log.speaker === 'user';
+	$: isTranscript = displayMode === 'transcript';
 </script>
 
 <svelte:window on:click={handleWindowClick} />
 
 <!-- メッセージコンテナ -->
-<div class="mb-4 flex w-full flex-col {isUser ? 'items-end' : 'items-start'}">
+<div
+	class="mb-4 flex w-full flex-col {isTranscript
+		? 'items-start'
+		: isUser
+			? 'items-end'
+			: 'items-start'}"
+>
+	<!-- 発言者名 (トランスクリプトモードのみ) -->
+	{#if isTranscript && showSpeakerName}
+		<div class="text-text-muted mb-1 text-xs {isUser ? 'font-bold' : ''}">
+			{isUser ? 'User' : 'Model'}
+		</div>
+	{/if}
+
 	<!-- バブル本体 -->
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<div
 		bind:this={bubbleContainer}
 		on:click={handleBubbleClick}
-		class="chat-bubble group relative max-w-[95%] rounded-2xl px-4 py-0 text-[length:inherit] break-words
-        {isUser
-			? 'bg-bubble-user-bg text-bubble-user-text [&_pre]:bg-bubble-user-bg [&_pre]:text-bubble-user-text'
-			: 'bg-bubble-ai-bg text-bubble-ai-text [&_pre]:bg-code-bg [&_pre]:text-code-text'}
+		class="chat-bubble group relative max-w-[95%] px-4 py-0 text-[length:inherit] break-words
+        {isTranscript
+			? 'rounded-lg px-0 py-0'
+			: `rounded-2xl px-4 ${
+					isUser
+						? 'bg-bubble-user-bg text-bubble-user-text [&_pre]:bg-bubble-user-bg [&_pre]:text-bubble-user-text'
+						: 'bg-bubble-ai-bg text-bubble-ai-text [&_pre]:bg-code-bg [&_pre]:text-code-text'
+				}`}
         [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:text-2xl [&_h1]:font-bold
         [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-bold
         [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-bold
@@ -130,9 +150,11 @@
 						dispatch('updateEditingText', e.currentTarget.value);
 					}}
 					class="min-h-[4rem] w-full resize-none overflow-hidden rounded border px-2 py-2
-                    {isUser
-						? 'border-bubble-user-bg bg-bubble-user-bg text-bubble-user-text'
-						: 'border-border-base bg-white text-text-base'}"
+                    {isTranscript
+						? 'bg-bg-base border-border-base text-text-base'
+						: isUser
+							? 'border-bubble-user-bg bg-bubble-user-bg text-bubble-user-text'
+							: 'border-border-base bg-white text-text-base'}"
 					on:keydown={(e) => {
 						if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
 							e.preventDefault();
@@ -178,7 +200,11 @@
 		<!-- アクションメニュー (クリックで表示) -->
 		{#if isMenuOpen && !isEditing}
 			<div
-				class="absolute top-full z-10 mt-2 flex gap-1 {isUser ? 'right-0' : 'left-0'}"
+				class="absolute top-full z-10 mt-2 flex gap-1 {isTranscript
+					? 'left-0'
+					: isUser
+						? 'right-0'
+						: 'left-0'}"
 				transition:slide={{ duration: 100, axis: 'y' }}
 			>
 				<button
@@ -229,9 +255,11 @@
 		<div
 			bind:this={metadataContainer}
 			class="mt-2 max-w-[95%] overflow-x-auto rounded-2xl p-4 text-sm
-            {isUser
-				? 'bg-bubble-user-bg text-bubble-user-text'
-				: 'bg-bubble-ai-bg text-bubble-ai-text'}"
+            {isTranscript
+				? 'bg-bg-surface border border-border-base text-text-base'
+				: isUser
+					? 'bg-bubble-user-bg text-bubble-user-text'
+					: 'bg-bubble-ai-bg text-bubble-ai-text'}"
 			transition:slide={{ duration: 150, axis: 'y' }}
 		>
 			<pre class="break-words whitespace-pre-wrap">{JSON.stringify(log.metadata, null, 2)}</pre>

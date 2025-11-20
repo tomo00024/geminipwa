@@ -4,6 +4,9 @@
 	import { base } from '$app/paths';
 	import { beforeNavigate } from '$app/navigation';
 	import { createEventDispatcher, tick, onMount, onDestroy } from 'svelte';
+	import { appSettings } from '$lib/stores';
+	import { chatSessionStore } from '$lib/chatSessionStore';
+	import LoadingIndicator from '$lib/components/ui/LoadingIndicator.svelte';
 
 	export let userInput: string;
 	export let isLoading: boolean;
@@ -178,6 +181,36 @@
 				{/if}
 			</div>
 			<div class="flex flex-shrink-0 items-center gap-4">
+				<!-- トークン数表示 (設定で有効な場合のみ) -->
+				{#if $appSettings.ui.showTokenCount && $chatSessionStore.session}
+					{@const logs = $chatSessionStore.session.logs}
+					{@const sessionTotalTokens = logs.reduce(
+						(acc, log) => acc + (log.tokenUsage?.total || 0),
+						0
+					)}
+					{@const lastAiLog = [...logs].reverse().find((l) => l.speaker === 'ai' && l.tokenUsage)}
+					{@const lastResponseTokens = lastAiLog?.tokenUsage?.total || 0}
+					<div class="ml-2 flex flex-col gap-0.5 text-gray-400" title="Last / Total Tokens">
+						<!-- Last Response -->
+						<div class="flex items-center justify-end gap-1.5">
+							<span class="text-[9px] font-bold tracking-wider text-gray-500 uppercase">Last</span>
+							<span class="text-[10px] font-medium tabular-nums">
+								{lastResponseTokens > 999
+									? (lastResponseTokens / 1000).toFixed(1) + 'k'
+									: lastResponseTokens}
+							</span>
+						</div>
+						<!-- Total Session -->
+						<div class="flex items-center justify-end gap-1.5">
+							<span class="text-[9px] font-bold tracking-wider text-gray-500 uppercase">Total</span>
+							<span class="text-[10px] font-medium tabular-nums">
+								{sessionTotalTokens > 999
+									? (sessionTotalTokens / 1000).toFixed(1) + 'k'
+									: sessionTotalTokens}
+							</span>
+						</div>
+					</div>
+				{/if}
 				<a
 					href="{base}/settings?from=session/{sessionId}"
 					class="rounded bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300"
@@ -223,7 +256,9 @@
 				disabled={isLoading || !userInput.trim()}
 			>
 				{#if isLoading}
-					送信中...
+					<div class="flex h-6 w-8 items-center justify-center">
+						<LoadingIndicator size="sm" color="bg-gray-400" />
+					</div>
 				{:else}
 					送信
 				{/if}

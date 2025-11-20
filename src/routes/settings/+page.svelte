@@ -12,6 +12,7 @@
 	import ApiErrorSettings from '$lib/components/global_settings/ApiErrorSettings.svelte';
 	import AssistSettings from '$lib/components/global_settings/AssistSettings.svelte';
 	import GenerationSettings from '$lib/components/global_settings/GenerationSettings.svelte';
+	import TokenUsageSettings from '$lib/components/global_settings/TokenUsageSettings.svelte';
 	import AccountSettings from '$lib/components/global_settings/AccountSettings.svelte';
 
 	const returnPath = derived(page, ($page) => {
@@ -51,6 +52,7 @@
 			<ApiErrorSettings />
 			<AssistSettings />
 			<GenerationSettings />
+			<TokenUsageSettings />
 			<AccountSettings />
 		</div>
 	</div>

@@ -7,6 +7,12 @@ export interface StandardChatResponse {
 	responseText: string;
 	metadata: any;
 	requestBody: any;
+	usageMetadata?: {
+		promptTokenCount: number;
+		candidatesTokenCount: number;
+		thoughtsTokenCount?: number;
+		totalTokenCount: number;
+	};
 }
 
 interface GeminiApiResponse {
@@ -75,7 +81,10 @@ function parseGeminiResponse(data: GeminiApiResponse): Omit<StandardChatResponse
 		};
 	}
 
-	return { responseText, metadata: data };
+	// usageMetadataの抽出
+	const usageMetadata = (data as any).usageMetadata;
+
+	return { responseText, metadata: data, usageMetadata };
 }
 
 export async function callGeminiApiOnClient(

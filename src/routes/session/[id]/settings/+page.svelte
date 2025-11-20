@@ -14,7 +14,7 @@
 	// UI Components
 	import Section from '$lib/components/ui/Section.svelte';
 	import Toggle from '$lib/components/ui/Toggle.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
+	import SelectionCard from '$lib/components/ui/SelectionCard.svelte';
 
 	// 各モードの設定コンポーネントをインポート
 	import StandardMode from '$lib/components/settings/StandardMode.svelte';
@@ -104,16 +104,11 @@
 		});
 	});
 
-	function handleSessionModeChange(event: Event) {
-		const newMode = (event.target as HTMLInputElement).value as
-			| 'standard'
-			| 'game'
-			| 'oneStepFC'
-			| 'twoStepFC';
-
+	function handleModeSelect(newMode: 'standard' | 'game' | 'oneStepFC' | 'twoStepFC') {
 		sessions.update((allSessions) => {
 			const sessionToUpdate = allSessions.find((s) => s.id === $page.params.id);
 			if (sessionToUpdate) {
+				// Reset defaults first
 				sessionToUpdate.viewMode = 'standard';
 				sessionToUpdate.featureSettings.apiMode = 'standard';
 
@@ -180,10 +175,46 @@
 				</Section>
 
 				<!-- モード選択 -->
-				<StandardMode {currentSession} onModeChange={handleSessionModeChange} />
-				<GameModeSettings {currentSession} onModeChange={handleSessionModeChange} />
-				<StructuredOutputSettings {currentSession} onModeChange={handleSessionModeChange} />
-				<FunctionCallingSettings {currentSession} onModeChange={handleSessionModeChange} />
+				<Section title="セッションモード">
+					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+						<SelectionCard
+							title="通常モード"
+							description="標準的なチャットモードです。"
+							selected={$currentSession.viewMode === 'standard' &&
+								$currentSession.featureSettings.apiMode === 'standard'}
+							onClick={() => handleModeSelect('standard')}
+						/>
+						<SelectionCard
+							title="ゲーム風モード"
+							description="チャット画面の見た目をゲーム風に切り替えます。"
+							selected={$currentSession.viewMode === 'game'}
+							onClick={() => handleModeSelect('game')}
+						/>
+						<SelectionCard
+							title="構造化出力モード"
+							description="AIの応答に特定のデータ構造を含めるように指示します。（非推奨・試験版）"
+							selected={$currentSession.featureSettings.apiMode === 'oneStepFC'}
+							onClick={() => handleModeSelect('oneStepFC')}
+						/>
+						<SelectionCard
+							title="Function Callingモード"
+							description="より複雑な対話フローを実現するためのモードです。（開発中）"
+							selected={$currentSession.featureSettings.apiMode === 'twoStepFC'}
+							onClick={() => handleModeSelect('twoStepFC')}
+						/>
+					</div>
+				</Section>
+
+				<!-- モード別詳細設定 -->
+				{#if $currentSession.viewMode === 'standard' && $currentSession.featureSettings.apiMode === 'standard'}
+					<StandardMode {currentSession} />
+				{:else if $currentSession.viewMode === 'game'}
+					<GameModeSettings {currentSession} />
+				{:else if $currentSession.featureSettings.apiMode === 'oneStepFC'}
+					<StructuredOutputSettings {currentSession} />
+				{:else if $currentSession.featureSettings.apiMode === 'twoStepFC'}
+					<FunctionCallingSettings {currentSession} />
+				{/if}
 
 				<!-- 汎用設定 -->
 				<DiceRollSettings />

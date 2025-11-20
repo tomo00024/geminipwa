@@ -50,35 +50,53 @@
 	<div class="space-y-3">
 		{#if $appSettings.apiKeys?.length > 0}
 			{#each $appSettings.apiKeys as apiKey, index (apiKey.id)}
-				<div class="grid grid-cols-[auto_1fr_2fr_auto] items-center gap-3 py-2">
-					<input
-						type="radio"
-						id={`key-select-${apiKey.id}`}
-						name="api-key-select"
-						class="h-4 w-4"
-						bind:group={$appSettings.activeApiKeyId}
-						value={apiKey.id}
-						title="このキーをチャットで使用する"
-					/>
-					<Input
-						id={`key-name-${apiKey.id}`}
-						bind:value={apiKey.name}
-						placeholder={`キー ${index + 1} の名前`}
-						class="w-full"
-					/>
-					<Input
-						id={`key-value-${apiKey.id}`}
-						type="password"
-						bind:value={apiKey.key}
-						placeholder="sk-..."
-						class="w-full"
-					/><Button
-						variant="danger"
-						on:click={() => deleteApiKey(apiKey.id)}
-						title="このキーを削除する"
-					>
-						削除
-					</Button>
+				<!-- svelte-ignore a11y-click-events-have-key-events -->
+				<!-- svelte-ignore a11y-no-static-element-interactions -->
+				<div
+					class="cursor-pointer rounded-lg border p-3 transition-all duration-200"
+					style:background-color={$appSettings.activeApiKeyId === apiKey.id
+						? '#262626'
+						: 'transparent'}
+					style:border-color={$appSettings.activeApiKeyId === apiKey.id ? '#737373' : '#525252'}
+					on:click={() => ($appSettings.activeApiKeyId = apiKey.id)}
+				>
+					<div class="grid grid-cols-[auto_1fr_2fr_auto] items-center gap-3">
+						<!-- Custom Radio/Check Indicator -->
+						<div
+							class="flex h-5 w-5 items-center justify-center rounded-full border transition-all"
+							style:border-color={$appSettings.activeApiKeyId === apiKey.id ? '#e5e5e5' : '#525252'}
+							style:background-color={$appSettings.activeApiKeyId === apiKey.id
+								? '#e5e5e5'
+								: 'transparent'}
+						>
+							{#if $appSettings.activeApiKeyId === apiKey.id}
+								<span class="text-xs font-bold" style:color="#171717">✓</span>
+							{/if}
+						</div>
+
+						<Input
+							id={`key-name-${apiKey.id}`}
+							bind:value={apiKey.name}
+							placeholder={`キー ${index + 1} の名前`}
+							class="w-full"
+						/>
+						<Input
+							id={`key-value-${apiKey.id}`}
+							type="password"
+							bind:value={apiKey.key}
+							placeholder="sk-..."
+							class="w-full"
+						/><Button
+							variant="danger"
+							on:click={(e) => {
+								e.stopPropagation();
+								deleteApiKey(apiKey.id);
+							}}
+							title="このキーを削除する"
+						>
+							削除
+						</Button>
+					</div>
 				</div>
 			{/each}
 		{:else}

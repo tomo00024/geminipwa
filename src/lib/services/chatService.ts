@@ -1,5 +1,5 @@
 import { get } from 'svelte/store';
-import { sessions, appSettings } from '$lib/stores';
+import { sessions, appSettings, tokenUsageHistory } from '$lib/stores';
 import { callGeminiApi } from '$lib/geminiService';
 import { generateUUID } from '$lib/utils';
 import { correctImageMarkdownInText } from '$lib/utils/imageUrlCorrector';
@@ -250,8 +250,46 @@ async function getAiResponseAndUpdate(
                             timestamp: new Date().toISOString(),
                             parentId: userMessageId,
                             activeChildId: null,
-                            metadata: result.metadata
+                            metadata: result.metadata,
+                            tokenUsage: (result as any).usageMetadata
+                                ? {
+                                    input: (result as any).usageMetadata.promptTokenCount,
+                                    output: (result as any).usageMetadata.candidatesTokenCount,
+                                    thinking: (result as any).usageMetadata.thoughtsTokenCount,
+                                    total: (result as any).usageMetadata.totalTokenCount
+                                }
+                                : undefined
                         };
+
+                        // トークン使用履歴を更新
+                        if (newAiResponse.tokenUsage) {
+                            const usage = newAiResponse.tokenUsage;
+                            const today = new Date().toISOString().split('T')[0];
+                            tokenUsageHistory.update((history) => {
+                                const existingEntry = history.find((h) => h.date === today);
+                                if (existingEntry) {
+                                    existingEntry.totalTokens += usage.total;
+                                    existingEntry.inputTokens += usage.input;
+                                    existingEntry.outputTokens += usage.output;
+                                    if (usage.thinking) {
+                                        existingEntry.thinkingTokens =
+                                            (existingEntry.thinkingTokens || 0) + usage.thinking;
+                                    }
+                                    return history;
+                                } else {
+                                    return [
+                                        ...history,
+                                        {
+                                            date: today,
+                                            totalTokens: usage.total,
+                                            inputTokens: usage.input,
+                                            outputTokens: usage.output,
+                                            thinkingTokens: usage.thinking || 0
+                                        }
+                                    ];
+                                }
+                            });
+                        }
                         sessionToUpdate.logs.push(newAiResponse);
 
                         if (parentUserMessage) {

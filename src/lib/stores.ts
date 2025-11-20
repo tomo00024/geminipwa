@@ -127,3 +127,18 @@ if (browser) {
 		localStorage.setItem(SESSIONS_KEY, JSON.stringify(value));
 	});
 }
+
+// --- Token Usage History Store ---
+const TOKEN_USAGE_KEY = 'token_usage_history';
+const storedTokenUsage = browser ? localStorage.getItem(TOKEN_USAGE_KEY) : null;
+// 配列として保存する (日付ごとの履歴)
+import type { TokenUsageHistory } from './types';
+const initialTokenUsage: TokenUsageHistory[] = storedTokenUsage ? JSON.parse(storedTokenUsage) : [];
+
+export const tokenUsageHistory = writable<TokenUsageHistory[]>(initialTokenUsage);
+
+if (browser) {
+	tokenUsageHistory.subscribe((value) => {
+		localStorage.setItem(TOKEN_USAGE_KEY, JSON.stringify(value));
+	});
+}

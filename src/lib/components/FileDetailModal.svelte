@@ -306,19 +306,14 @@
 			{#if isEditing}
 				<!-- --- 編集モードのフッター --- -->
 				<div class="flex justify-end gap-3">
-					<button
-						on:click={handleCancelEdit}
-						class="rounded-md border border-gray-600 bg-transparent px-4 py-2 text-sm font-semibold text-gray-300 transition hover:bg-gray-800"
-					>
-						キャンセル
-					</button>
-					<button
+					<Button variant="secondary" on:click={handleCancelEdit}>キャンセル</Button>
+					<Button
+						variant="primary"
 						on:click={handleUpdate}
 						disabled={!editableFile.title || isSaving}
-						class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						{isSaving ? '保存中...' : '保存する'}
-					</button>
+					</Button>
 				</div>
 			{:else}
 				<!-- --- 表示モードのフッター --- -->
@@ -326,31 +321,17 @@
 					<!-- 左側にオーナー用ボタンを配置 -->
 					<div class="flex gap-2">
 						{#if isOwner}
-							<button
-								on:click={handleDelete}
-								disabled={isDeleting}
-								class="rounded-md bg-red-900/50 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-900 disabled:cursor-not-allowed disabled:opacity-50"
-							>
+							<Button variant="danger" on:click={handleDelete} disabled={isDeleting}>
 								{isDeleting ? '削除中...' : '削除'}
-							</button>
-							<!-- 編集ボタン: 指定のみどり (#133a0e) に変更 -->
-							<button
-								on:click={handleEditClick}
-								class="rounded-md bg-[#133a0e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0d2c0b]"
-							>
-								編集
-							</button>
+							</Button>
+							<!-- 編集ボタン -->
+							<Button variant="primary" on:click={handleEditClick}>編集</Button>
 						{/if}
 					</div>
 
 					<!-- 右側に通常のボタンを配置 -->
 					<div class="flex justify-end gap-3">
-						<button
-							on:click={closeModal}
-							class="rounded-md border border-gray-600 bg-transparent px-4 py-2 text-sm font-semibold text-gray-300 transition hover:bg-gray-800"
-						>
-							閉じる
-						</button>
+						<Button variant="secondary" on:click={closeModal}>閉じる</Button>
 						<Button variant="blue" on:click={handleImport} disabled={isImporting}>
 							{isImporting ? '読み込み中...' : '読み込む'}
 						</Button>

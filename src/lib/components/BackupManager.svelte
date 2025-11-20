@@ -15,8 +15,9 @@
 	const unsubscribe = sessions.subscribe((currentSessions) => {
 		const settings = $appSettings;
 
-		// 1. Check if backup is enabled and auto-backup is on
-		if (!settings.backup?.isEnabled || !settings.backup?.autoBackup) {
+		// 1. Check if backup is enabled
+		// We only check isEnabled. autoBackup flag is redundant or can be assumed true if enabled.
+		if (!settings.backup?.isEnabled) {
 			return;
 		}
 
@@ -46,7 +47,6 @@
 		isBackingUp = true;
 
 		try {
-			console.log('[AutoBackup] Starting backup...');
 			const response = await fetch('/api/backup/google-drive', {
 				method: 'POST',
 				headers: {
@@ -58,7 +58,6 @@
 			if (!response.ok) {
 				if (response.status === 401 || response.status === 403) {
 					console.warn('[AutoBackup] Auth error, disabling auto-backup temporarily.');
-					// Optionally disable auto-backup to prevent spamming
 					return;
 				}
 				throw new Error(`Backup failed with status: ${response.status}`);

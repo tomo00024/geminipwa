@@ -141,6 +141,8 @@ export interface UiSettings {
 	showTokenCount: boolean;
 	useCustomFontSize: boolean;
 	chatFontSize: number;
+	chatDisplayMode: 'bubble' | 'transcript';
+	showSpeakerNameInTranscript: boolean;
 }
 
 /**
@@ -222,6 +224,26 @@ export interface Log {
 	 */
 	activeChildId: string | null;
 	metadata?: any;
+	/**
+	 * トークン使用量
+	 */
+	tokenUsage?: {
+		input: number;
+		output: number;
+		thinking?: number; // 思考トークン (outputに含まれる場合もあるが、分離可能な場合はここに記録)
+		total: number;
+	};
+}
+
+/**
+ * 日次のトークン使用履歴
+ */
+export interface TokenUsageHistory {
+	date: string; // YYYY-MM-DD
+	totalTokens: number;
+	inputTokens: number;
+	outputTokens: number;
+	thinkingTokens: number;
 }
 
 export interface Session {

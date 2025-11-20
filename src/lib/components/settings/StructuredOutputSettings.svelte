@@ -11,7 +11,6 @@
 	import Button from '$lib/components/ui/Button.svelte';
 
 	export let currentSession: Readable<Session | undefined>;
-	export let onModeChange: (event: Event) => void;
 
 	const sessionId = derived(page, ($page) => $page.params.id);
 	const session = derived([sessions, sessionId], ([$sessions, $sessionId]) =>
@@ -76,22 +75,6 @@
 </script>
 
 <Section title="構造化出力モード（非推奨・試験版）">
-	<label
-		class="flex cursor-pointer items-center justify-between rounded-lg border border-gray-600 p-4 hover:bg-gray-800"
-	>
-		<div>
-			<p class="text-sm text-gray-400">AIの応答に特定のデータ構造を含めるように指示します。</p>
-		</div>
-		<input
-			type="radio"
-			name="session-mode"
-			value="oneStepFC"
-			class="h-4 w-4"
-			checked={$apiMode === 'oneStepFC'}
-			on:change={onModeChange}
-		/>
-	</label>
-
 	{#if $apiMode === 'oneStepFC'}
 		<div class="mt-4 space-y-4 border-t border-gray-600 pt-4">
 			<div>

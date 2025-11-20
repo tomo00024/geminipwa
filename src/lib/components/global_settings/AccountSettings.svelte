@@ -1,4 +1,3 @@
-<!-- src/lib/components/global_settings/AccountSettings.svelte -->
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { signIn, signOut } from '@auth/sveltekit/client';
@@ -6,10 +5,13 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Toggle from '$lib/components/ui/Toggle.svelte';
 	import { appSettings, sessions } from '$lib/stores';
+	import BackupHistoryModal from '$lib/components/backup/BackupHistoryModal.svelte';
 
 	let isDeleting = false;
 	let isBackingUp = false;
 	let backupMessage = '';
+	let isRestoreModalOpen = false;
+	let fileInput: HTMLInputElement;
 
 	async function handleDeleteAccount() {
 		if (
@@ -86,25 +88,119 @@
 		}
 	}
 
+	// Manual JSON Export
+	function handleExportJson() {
+		const dataStr = JSON.stringify($sessions, null, 2);
+		const blob = new Blob([dataStr], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `gemini-sessions-${new Date().toISOString().split('T')[0]}.json`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}
+
+	// Manual JSON Import
+	function handleImportJson(event: Event) {
+		const target = event.target as HTMLInputElement;
+		const file = target.files?.[0];
+		if (!file) return;
+
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			try {
+				const content = e.target?.result as string;
+				const importedSessions = JSON.parse(content);
+				if (!Array.isArray(importedSessions)) throw new Error('Invalid format');
+
+				if (
+					confirm(
+						`ファイルから ${importedSessions.length} 件のセッションを読み込みますか？\n既存の同IDのセッションは上書きされます。`
+					)
+				) {
+					sessions.update((current) => {
+						const newSessions = [...current];
+						importedSessions.forEach((imported) => {
+							const index = newSessions.findIndex((s) => s.id === imported.id);
+							if (index >= 0) {
+								newSessions[index] = imported;
+							} else {
+								newSessions.push(imported);
+							}
+						});
+						return newSessions.sort(
+							(a, b) => new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime()
+						);
+					});
+					alert('読み込みが完了しました。');
+				}
+			} catch (err) {
+				console.error(err);
+				alert('ファイルの読み込みに失敗しました。形式が正しいか確認してください。');
+			}
+			// Reset input
+			target.value = '';
+		};
+		reader.readAsText(file);
+	}
+
 	// 権限チェックのための派生状態
 	$: scope = $page.data.session?.user?.scope || '';
 	$: hasDriveScope = scope.includes('https://www.googleapis.com/auth/drive.file');
 	$: isPermissionMissing = $appSettings.backup.isEnabled && !hasDriveScope;
 
 	function handleReconnect() {
-		const options = {
-			callbackUrl: '/settings',
-			redirect: true
-		};
 		const authParams = {
 			scope: 'openid profile email https://www.googleapis.com/auth/drive.file',
 			prompt: 'consent',
 			access_type: 'offline',
 			response_type: 'code'
 		};
-		signIn('google', options, authParams);
+		signIn('google', { callbackUrl: '/settings', redirect: true }, authParams);
 	}
+	async function handleDestroySessions() {
+		if (!confirm('本当にすべてのセッション履歴を削除しますか？\nこの操作は取り消せません。')) {
+			return;
+		}
+
+		if (!confirm('本当によろしいですか？\nすべてのチャット履歴が失われます。')) {
+			return;
+		}
+
+		sessions.set([]);
+		alert('すべてのセッション履歴を削除しました。');
+	}
+
+	async function handleResetAll() {
+		if (
+			!confirm(
+				'本当にすべてのデータを破棄して初期化しますか？\n設定、セッション履歴、すべてが削除されます。'
+			)
+		) {
+			return;
+		}
+
+		if (
+			!confirm(
+				'この操作は絶対に取り消せません。\nアプリケーションは初期状態に戻ります。\n実行しますか？'
+			)
+		) {
+			return;
+		}
+
+		localStorage.clear();
+		// 念のためストアもリセット
+		sessions.set([]);
+
+		alert('初期化しました。アプリケーションを再読み込みします。');
+		window.location.reload();
+	}
+	let isDestructiveOpen = false;
 </script>
+
+<BackupHistoryModal bind:isOpen={isRestoreModalOpen} />
 
 <!-- アカウント連携 -->
 <Section title="アカウント連携">
@@ -113,20 +209,20 @@
 			<p>
 				✓ <span class="font-medium">{$page.data.session.user?.email}</span> としてログイン中
 			</p>
-			<Button on:click={() => signOut()}>ログアウト</Button>
+			<Button onclick={() => signOut()}>ログアウト</Button>
 		</div>
 		<div class="space-y-3 border-t border-gray-600 pt-4">
 			<h3 class="font-bold text-red-600">アカウントの削除 (退会)</h3>
 			<p class="text-sm text-gray-400">
 				アカウントを削除すると、サーバーにアップロードしたすべてのセッション履歴が完全に削除され、元に戻すことはできません。
 			</p>
-			<Button variant="danger" on:click={handleDeleteAccount} disabled={isDeleting}>
+			<Button variant="danger" onclick={handleDeleteAccount} disabled={isDeleting}>
 				{isDeleting ? '削除中...' : 'アカウントを完全に削除する'}
 			</Button>
 		</div>
 	{:else}
 		<div class="space-y-3">
-			<Button variant="blue" on:click={() => signIn('google')}>Googleアカウントでログイン</Button>
+			<Button variant="blue" onclick={() => signIn('google')}>Googleアカウントでログイン</Button>
 			<p class="text-sm text-gray-400">
 				ログインすると、セッション履歴をWeb上に公開して共有したり、Google
 				Driveへ自動でバックアップしたりできるようになります。
@@ -139,7 +235,7 @@
 <Section title="データ管理">
 	<!-- Google Drive 連携 -->
 	<div class="space-y-2">
-		<h3 class="font-bold">Google Drive 連携</h3>
+		<h3 class="font-bold">Google Drive バックアップ</h3>
 		<Toggle
 			id="drive-sync-enabled"
 			disabled={!$page.data.session}
@@ -174,42 +270,68 @@
 						同期履歴なし
 					{/if}
 				</div>
-				<div class="flex items-center gap-2">
+				<div class="flex flex-wrap items-center gap-2">
 					<Button size="sm" onclick={handleBackupNow} disabled={isBackingUp}>
 						{#if isBackingUp}
 							同期中...
 						{:else}
-							今すぐ同期
+							今すぐバックアップ
 						{/if}
+					</Button>
+					<Button size="sm" variant="secondary" onclick={() => (isRestoreModalOpen = true)}>
+						バックアップから復元...
 					</Button>
 					{#if backupMessage}
 						<span class="text-sm text-green-500">{backupMessage}</span>
 					{/if}
 				</div>
+				<p class="text-xs text-gray-400">
+					※ 1日1つのバックアップファイル（gemini-backup-YYYY-MM-DD.json）が作成されます。<br />
+					※ 自動バックアップも「今すぐバックアップ」も、その日のファイルを上書き更新します。
+				</p>
 			</div>
 		{/if}
 	</div>
 
 	<!-- 手動バックアップ -->
 	<div class="space-y-2 border-t border-gray-600 pt-4">
-		<h3 class="font-bold">手動バックアップ</h3>
+		<h3 class="font-bold">手動バックアップ (JSON)</h3>
 		<div class="flex flex-wrap gap-2">
-			<Button class="bg-green-200 text-green-800 hover:bg-green-300">
-				セッション履歴をJSON出力
-			</Button>
-			<Button class="bg-green-200 text-green-800 hover:bg-green-300">
-				セッション履歴をJSON読込
-			</Button>
+			<Button variant="primary" onclick={handleExportJson}>セッション履歴をJSON出力</Button>
+			<Button variant="primary" onclick={() => fileInput.click()}>セッション履歴をJSON読込</Button>
+			<input
+				type="file"
+				accept=".json"
+				class="hidden"
+				bind:this={fileInput}
+				onchange={handleImportJson}
+			/>
 		</div>
-		<p class="text-sm text-gray-400">セッション履歴をJSONファイルで手動でバックアップします。</p>
+		<p class="text-sm text-gray-400">
+			セッション履歴をJSONファイルで手動でバックアップ・復元します。
+		</p>
 	</div>
 </Section>
 
 <!-- 破壊的変更 -->
 <section class="space-y-4 border-t border-red-200 pt-4">
-	<h2 class="text-lg font-bold text-red-600">破壊的変更</h2>
-	<div class="flex flex-wrap gap-2">
-		<Button variant="danger">セッション履歴の破棄</Button>
-		<Button variant="danger">すべて破棄して初期化</Button>
-	</div>
+	<button
+		class="flex w-full items-center justify-between text-left"
+		onclick={() => (isDestructiveOpen = !isDestructiveOpen)}
+	>
+		<h2 class="text-lg font-bold text-red-600">破壊的変更</h2>
+		<span
+			class="text-red-600 transition-transform duration-200"
+			class:rotate-180={isDestructiveOpen}
+		>
+			▼
+		</span>
+	</button>
+
+	{#if isDestructiveOpen}
+		<div class="flex flex-wrap gap-2">
+			<Button variant="danger" onclick={handleDestroySessions}>セッション履歴の破棄</Button>
+			<Button variant="danger" onclick={handleResetAll}>すべて破棄して初期化</Button>
+		</div>
+	{/if}
 </section>

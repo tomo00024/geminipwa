@@ -41,10 +41,10 @@
 	--bubble-user-bg: #133a0e;
 	--bubble-user-text: #e5e7eb;
 
-	/* プライマリーボタン */
-	--btn-primary-bg: #133a0e;
-	--btn-primary-text: #ffffff;
-	--btn-primary-hover-bg: #0d2c0b;
+	/* プライマリーボタン (Gray 200 base) */
+	--btn-primary-bg: #e5e7eb;
+	--btn-primary-text: #1f2937;
+	--btn-primary-hover-bg: #d1d5db;
 
 	/* セカンダリーボタン / メニューボタン */
 	--btn-secondary-bg: #e5e7eb;

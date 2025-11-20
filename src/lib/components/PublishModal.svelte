@@ -9,6 +9,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
+	import SelectionCard from '$lib/components/ui/SelectionCard.svelte';
 
 	export let busy = false;
 	export let initialTitle = '';
@@ -75,50 +76,32 @@
 		<h2 id="modal-title" class="text-xl font-bold text-gray-200">セッションの公開</h2>
 
 		<!-- 1. 公開範囲の選択 -->
+		<!-- 1. 公開範囲の選択 -->
 		<div class="mt-4 space-y-4">
 			<h3 class="text-base font-semibold text-gray-200">1. 公開範囲の選択 *</h3>
-			<label
-				class="flex cursor-pointer items-start rounded-lg border border-gray-700 p-4 transition hover:bg-gray-800/50"
-				class:bg-gray-800={contentScope === 'template'}
-			>
-				<input
-					type="radio"
-					name="publish-scope"
-					value="template"
-					class="mt-1 mr-4 h-5 w-5 accent-green-500"
-					bind:group={contentScope}
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+				<SelectionCard
+					title="テンプレートのみ公開"
+					description="最初のプロンプトとAIの最初の応答、セッション設定を公開します。"
+					selected={contentScope === 'template'}
+					onClick={() => (contentScope = 'template')}
 				/>
-				<div>
-					<span class="font-semibold text-gray-200">テンプレートのみ公開</span>
-					<p class="mt-1 text-sm text-gray-400">
-						最初のプロンプトとAIの最初の応答、セッション設定を公開します。
-					</p>
-				</div>
-			</label>
-			<label
-				class="flex cursor-pointer items-start rounded-lg border border-gray-700 p-4 transition hover:bg-gray-800/50"
-				class:bg-gray-800={contentScope === 'full'}
-			>
-				<input
-					type="radio"
-					name="publish-scope"
-					value="full"
-					class="mt-1 mr-4 h-5 w-5 accent-green-500"
-					bind:group={contentScope}
+				<SelectionCard
+					title="すべての会話履歴を公開"
+					description="設定、プロンプト、そしてすべてのAIとの会話履歴を公開します。"
+					selected={contentScope === 'full'}
+					onClick={() => (contentScope = 'full')}
 				/>
-				<div>
-					<span class="font-semibold text-gray-200">すべての会話履歴を公開</span>
-					<p class="mt-1 text-sm text-gray-400">
-						設定、プロンプト、そしてすべてのAIとの会話履歴を公開します。
-					</p>
-					<div
-						class="mt-2 rounded border-l-4 border-yellow-600 bg-yellow-900/30 p-2 text-sm text-yellow-200"
-					>
-						<strong class="font-bold">⚠️【注意】</strong>
-						個人情報や機密情報が含まれていないか内容をよく確認してください。
-					</div>
-				</div>
-			</label>
+			</div>
+
+			<div
+				class="mt-2 rounded border-l-4 border-yellow-600 bg-yellow-900/30 p-2 text-sm text-yellow-200 transition-all duration-200"
+				class:invisible={contentScope !== 'full'}
+				class:opacity-0={contentScope !== 'full'}
+			>
+				<strong class="font-bold">⚠️【注意】</strong>
+				個人情報や機密情報が含まれていないか内容をよく確認してください。
+			</div>
 		</div>
 
 		<!-- 2. 公開情報の入力 -->

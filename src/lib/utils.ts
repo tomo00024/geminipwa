@@ -55,7 +55,9 @@ export const defaultGameViewSettings: GameViewSettings = {
 export const defaultUiSettings: UiSettings = {
 	showTokenCount: true,
 	useCustomFontSize: false,
-	chatFontSize: 16
+	chatFontSize: 16,
+	chatDisplayMode: 'bubble',
+	showSpeakerNameInTranscript: true
 };
 
 /**

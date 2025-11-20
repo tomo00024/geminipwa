@@ -11,7 +11,6 @@
 	import Input from '$lib/components/ui/Input.svelte';
 
 	export let currentSession: Readable<Session | undefined>;
-	export let onModeChange: (event: Event) => void;
 
 	const sessionId = derived(page, ($page) => $page.params.id);
 	const session = derived([sessions, sessionId], ([$sessions, $sessionId]) =>
@@ -79,22 +78,6 @@
 </script>
 
 <Section title="ゲーム風モード">
-	<label
-		class="flex cursor-pointer items-center justify-between rounded-lg border border-gray-600 p-4 hover:bg-gray-800"
-	>
-		<div>
-			<p class="text-sm text-gray-400">チャット画面の見た目をゲーム風に切り替えます。</p>
-		</div>
-		<input
-			type="radio"
-			name="session-mode"
-			value="game"
-			class="h-4 w-4"
-			checked={$currentSession?.viewMode === 'game'}
-			on:change={onModeChange}
-		/>
-	</label>
-
 	{#if $currentSession?.viewMode === 'game' && $session?.gameViewSettings}
 		<div class="mt-4 space-y-6 border-t border-gray-600 pt-4">
 			<!-- 画像設定 -->

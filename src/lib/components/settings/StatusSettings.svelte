@@ -129,31 +129,15 @@
 					<div
 						class="mt-3 flex flex-wrap items-center justify-between gap-4 border-t border-gray-700 pt-3"
 					>
-						<div class="flex items-center gap-4">
-							<span class="text-xs text-gray-500">計算:</span>
-							<label class="flex cursor-pointer items-center gap-2">
-								<input
-									type="radio"
-									name="mode-{status.id}"
-									value="add"
-									class="h-4 w-4 text-blue-500 focus:ring-blue-500"
-									checked={status.mode === 'add'}
-									on:change={() => handleCustomStatusModeChange(status.id, 'add')}
-								/>
-								<span class="text-sm text-gray-300">加算</span>
-							</label>
-							<label class="flex cursor-pointer items-center gap-2">
-								<input
-									type="radio"
-									name="mode-{status.id}"
-									value="set"
-									class="h-4 w-4 text-blue-500 focus:ring-blue-500"
-									checked={status.mode === 'set'}
-									on:change={() => handleCustomStatusModeChange(status.id, 'set')}
-								/>
-								<span class="text-sm text-gray-300">上書き</span>
-							</label>
-						</div>
+						<Toggle
+							id="mode-{status.id}"
+							label="計算方法"
+							offText="加算"
+							onText="上書き"
+							checked={status.mode === 'set'}
+							on:change={(e) =>
+								handleCustomStatusModeChange(status.id, e.detail.checked ? 'set' : 'add')}
+						/>
 						<Toggle
 							label="画面に表示する"
 							checked={status.isVisible}

@@ -68,6 +68,9 @@
 				on:saveEditing={onSaveEditing}
 				on:delete={onDelete}
 				on:retry={onRetry}
+				on:retry={onRetry}
+				displayMode={$appSettings.ui.chatDisplayMode}
+				showSpeakerName={$appSettings.ui.showSpeakerNameInTranscript}
 			>
 				<!-- 分岐ナビゲーション (Slot) -->
 				<div slot="branch-nav" class="w-full">

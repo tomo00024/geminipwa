@@ -1,38 +1,95 @@
+//src/auth.ts
+
 import { SvelteKitAuth } from '@auth/sveltekit';
 import Google from '@auth/sveltekit/providers/google';
 import { AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, AUTH_SECRET } from '$env/static/private';
+
+async function refreshAccessToken(token: any) {
+	try {
+		const url =
+			'https://oauth2.googleapis.com/token?' +
+			new URLSearchParams({
+				client_id: AUTH_GOOGLE_ID,
+				client_secret: AUTH_GOOGLE_SECRET,
+				grant_type: 'refresh_token',
+				refresh_token: token.refreshToken
+			});
+
+		const response = await fetch(url, {
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded'
+			},
+			method: 'POST'
+		});
+
+		const refreshedTokens = await response.json();
+
+		if (!response.ok) {
+			throw refreshedTokens;
+		}
+
+		return {
+			...token,
+			accessToken: refreshedTokens.access_token,
+			accessTokenExpires: Date.now() + refreshedTokens.expires_in * 1000,
+			refreshToken: refreshedTokens.refresh_token ?? token.refreshToken // Fall back to old refresh token
+		};
+	} catch (error) {
+		console.log(error);
+
+		return {
+			...token,
+			error: 'RefreshAccessTokenError'
+		};
+	}
+}
 
 export const { handle, signIn, signOut } = SvelteKitAuth({
 	providers: [
 		Google({
 			clientId: AUTH_GOOGLE_ID,
-			clientSecret: AUTH_GOOGLE_SECRET
+			clientSecret: AUTH_GOOGLE_SECRET,
+			authorization: {
+				params: {
+					prompt: 'consent',
+					access_type: 'offline',
+					response_type: 'code'
+				}
+			}
 		})
 	],
 	secret: AUTH_SECRET,
 	trustHost: true,
 
 	callbacks: {
-		// JWTが作成・更新されるたびに実行される
 		async jwt({ token, user, account }) {
-			// "account" を引数に追加
-			// ログインフローの初回時のみ account オブジェクトが存在する
-			if (account) {
-				// Auth.jsが生成する一時的なIDではなく、
-				// プロバイダー(Google)から提供される永続的なIDをtokenに格納する
-				token.id = account.providerAccountId;
-				token.accessToken = account.access_token;
-				token.scope = account.scope;
+			// Initial sign in
+			if (account && user) {
+				return {
+					accessToken: account.access_token,
+					accessTokenExpires: Date.now() + (account.expires_in as number) * 1000,
+					refreshToken: account.refresh_token,
+					user,
+					id: account.providerAccountId,
+					scope: account.scope
+				};
 			}
-			return token;
+
+			// Return previous token if the access token has not expired yet
+			if (Date.now() < (token.accessTokenExpires as number)) {
+				return token;
+			}
+
+			// Access token has expired, try to update it
+			return refreshAccessToken(token);
 		},
-		// セッションが参照されるたびに実行される
 		async session({ session, token }) {
-			// tokenからIDを取り出して、セッションのuserオブジェクトに追加する
-			if (token.id && session.user) {
+			if (token) {
 				session.user.id = token.id as string;
 				session.user.accessToken = token.accessToken as string;
 				session.user.scope = token.scope as string;
+				// @ts-ignore
+				session.error = token.error;
 			}
 			return session;
 		}
