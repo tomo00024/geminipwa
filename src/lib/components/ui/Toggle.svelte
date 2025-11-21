@@ -42,8 +42,8 @@
 		role="switch"
 		aria-checked={checked}
 		{disabled}
-		class="relative flex h-8 w-32 items-center rounded-full p-1 focus:outline-none"
-		style="background-color: #262626; isolation: isolate; -webkit-tap-highlight-color: transparent; user-select: none;"
+		class="relative flex h-8 w-32 items-center rounded-full p-1 text-text-off focus:outline-none"
+		style="background-color: var(--btn-secondary-bg); isolation: isolate; -webkit-tap-highlight-color: transparent; user-select: none;"
 		tabindex="0"
 	>
 		<!-- Sliding Background Pill -->
@@ -54,8 +54,9 @@
 
 		<!-- OFF Segment -->
 		<span
-			class="relative z-10 w-1/2 text-center text-xs font-bold transition-colors duration-200"
-			style="color: {!checked ? '#171717' : '#a3a3a3'};"
+			class="relative z-10 w-1/2 text-center text-xs font-bold text-text-off transition-colors duration-200"
+			class:text-text-main={!checked}
+			class:text-text-off={checked}
 		>
 			{offText}
 		</span>
@@ -63,7 +64,8 @@
 		<!-- ON Segment -->
 		<span
 			class="relative z-10 w-1/2 text-center text-xs font-bold transition-colors duration-200"
-			style="color: {checked ? '#171717' : '#a3a3a3'};"
+			class:text-text-main={checked}
+			class:text-text-off={!checked}
 		>
 			{onText}
 		</span>
@@ -73,7 +75,7 @@
 		class="text-sm font-medium text-text-main"
 		class:cursor-pointer={!disabled}
 		class:text-text-disabled={disabled}
-		class:text-stone-400={disabled}
+		class:text-text-off={disabled}
 	>
 		{label}
 	</span>

@@ -64,7 +64,7 @@
             Desktop (sm+): Rounded corners, shadow-2xl, no border, max-height limit.
         -->
 		<div
-			class="flex h-full w-full flex-col overflow-hidden bg-app-bg shadow-2xl sm:h-auto sm:max-h-[90vh] sm:rounded-xl {sizeClasses[
+			class="flex h-full w-full flex-col overflow-hidden bg-main-bg shadow-2xl sm:h-auto sm:max-h-[90vh] sm:rounded-xl {sizeClasses[
 				size
 			]}"
 			transition:scale={{
@@ -76,6 +76,7 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="modal-title"
+			tabindex="-1"
 		>
 			<!-- Header -->
 			<div
@@ -86,7 +87,7 @@
 					<slot name="header-extra" />
 					<button
 						on:click={close}
-						class="rounded-md p-1 text-text-muted hover:bg-stone-700 hover:text-white focus:outline-none"
+						class="rounded-md p-1 text-text-off hover:bg-bg-hover hover:text-white focus:outline-none"
 						aria-label="Close"
 					>
 						<svg

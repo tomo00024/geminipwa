@@ -99,7 +99,7 @@
 <Modal isOpen={true} title="公開セッションを探す" size="xl" noPadding={true} on:close={close}>
 	<div class="flex h-full flex-col">
 		<!-- Search Bar (Fixed) -->
-		<div class="border-b border-stone-700/50 bg-app-bg p-4">
+		<div class="border-b border-stone-700/50 bg-main-bg p-4">
 			<Input
 				type="search"
 				bind:value={searchQuery}
@@ -118,10 +118,10 @@
 				<div class="rounded-lg border border-red-800 bg-red-900/20 p-4 text-center text-red-400">
 					<p>データの読み込みに失敗しました。</p>
 					<p class="text-sm opacity-75">{error}</p>
-					<Button variant="secondary" class="mt-4" on:click={fetchFiles}>再試行</Button>
+					<Button variant="primary" class="mt-4" on:click={fetchFiles}>再試行</Button>
 				</div>
 			{:else if filteredFiles.length === 0}
-				<div class="py-16 text-center text-stone-500">
+				<div class="py-16 text-center text-text-off">
 					{#if searchQuery}
 						検索条件に一致するセッションが見つかりませんでした。
 					{:else}
@@ -133,7 +133,7 @@
 					{#each filteredFiles as file (file.id)}
 						<!-- カード全体をクリック可能にし、詳細モーダルを開く -->
 						<div
-							class="cursor-pointer rounded-lg border border-stone-700 bg-transparent p-4 transition hover:bg-stone-800/50"
+							class="cursor-pointer rounded-lg border border-stone-700 bg-transparent p-4 transition hover:bg-bg-hover/50"
 							on:click={() => openDetailModal(file)}
 							role="button"
 							tabindex="0"
@@ -151,13 +151,13 @@
 								{/if}
 
 								<div class="flex flex-grow flex-col overflow-hidden">
-									<h3 class="truncate text-lg font-semibold text-stone-200">{file.title}</h3>
+									<h3 class="truncate text-lg font-semibold text-text-main">{file.title}</h3>
 
 									{#if file.tags && file.tags.length > 0}
 										<div class="mt-2 flex flex-wrap gap-2">
 											{#each file.tags as tag}
 												<span
-													class="rounded-full bg-stone-700 px-2.5 py-0.5 text-xs font-medium text-stone-300"
+													class="rounded-full bg-stone-700 px-2.5 py-0.5 text-xs font-medium text-text-main"
 												>
 													{tag}
 												</span>
@@ -165,13 +165,13 @@
 										</div>
 									{/if}
 
-									<p class="mt-2 line-clamp-2 flex-grow text-sm text-stone-400">
+									<p class="mt-2 line-clamp-2 flex-grow text-sm text-text-off">
 										{file.description}
 									</p>
 
 									<!-- メタ情報 -->
 									<div class="mt-3 flex items-center justify-between">
-										<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500">
+										<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-off">
 											<span>👤 {file.authorName}</span>
 											{#if file.model}
 												<span class="flex items-center gap-1" title="使用モデル">

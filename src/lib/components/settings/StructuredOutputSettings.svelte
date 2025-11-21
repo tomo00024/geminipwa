@@ -87,11 +87,13 @@
 				/>
 			</div>
 			<div>
-				<h3 class="mb-2 font-medium text-stone-200">好感度によるAIの応答変化ルール</h3>
+				<h3 class="mb-2 font-medium text-text-main">好感度によるAIの応答変化ルール</h3>
 				<div class="space-y-3">
 					{#if $goodwill}
 						{#each $goodwill.thresholds as threshold, i (i)}
-							<div class="flex items-start gap-2 rounded-md border border-stone-600 bg-stone-800 p-2">
+							<div
+								class="flex items-start gap-2 rounded-md border border-stone-600 bg-stone-800 p-2"
+							>
 								<div class="flex-none">
 									<Input
 										id="level-{i}"

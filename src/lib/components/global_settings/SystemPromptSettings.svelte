@@ -21,28 +21,8 @@
 		disabled={!$appSettings.systemPrompt.isEnabled}
 		class="max-w-md"
 	/>
-	<p class="text-sm text-stone-400">
+	<p class="text-sm text-text-off">
 		AIへの基本的な指示を定義します。入力すると自動的に保存されます。
-	</p>
-</Section>
-
-<!-- ダミーモデルプロンプト -->
-<Section title="ダミーモデルプロンプト">
-	<Toggle
-		id="dummy-model-prompt-enabled"
-		bind:checked={$appSettings.dummyModelPrompt.isEnabled}
-		label="有効にする"
-	/>
-	<Textarea
-		id="dummy-model-prompt"
-		rows={2}
-		bind:value={$appSettings.dummyModelPrompt.text}
-		placeholder="モデル入力..."
-		disabled={!$appSettings.dummyModelPrompt.isEnabled}
-		class="max-w-md"
-	/>
-	<p class="text-sm text-stone-400">
-		ユーザー入力の直後に続く、モデル側の直近の発言としてダミーで入力します。入力すると自動的に保存されます。
 	</p>
 </Section>
 
@@ -61,7 +41,27 @@
 		disabled={!$appSettings.dummyUserPrompt.isEnabled}
 		class="max-w-md"
 	/>
-	<p class="text-sm text-stone-400">
+	<p class="text-sm text-text-off">
 		ユーザー入力の直後に続く、ユーザー側の直近の発言としてダミーで入力します。入力すると自動的に保存されます。
+	</p>
+</Section>
+
+<!-- ダミーモデルプロンプト -->
+<Section title="ダミーモデルプロンプト">
+	<Toggle
+		id="dummy-model-prompt-enabled"
+		bind:checked={$appSettings.dummyModelPrompt.isEnabled}
+		label="有効にする"
+	/>
+	<Textarea
+		id="dummy-model-prompt"
+		rows={2}
+		bind:value={$appSettings.dummyModelPrompt.text}
+		placeholder="モデル入力..."
+		disabled={!$appSettings.dummyModelPrompt.isEnabled}
+		class="max-w-md"
+	/>
+	<p class="text-sm text-text-off">
+		ユーザー入力の直後に続く、モデル側の直近の発言としてダミーで入力します。入力すると自動的に保存されます。
 	</p>
 </Section>

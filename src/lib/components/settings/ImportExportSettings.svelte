@@ -135,7 +135,7 @@
 	{#if parseError}
 		<p class="text-sm text-red-500">{parseError}</p>
 	{/if}
-	<p class="text-sm text-stone-400">
+	<p class="text-sm text-text-off">
 		現在のセッション設定を出力したり、テキストを貼り付けて設定を読み込んだりできます。
 	</p>
 
@@ -156,9 +156,7 @@
 			{#if copySuccess}
 				<span class="text-sm text-green-400">クリップボードにコピーしました！</span>
 			{/if}
-			<Button variant="primary" on:click={importSettings} disabled={isApplyButtonDisabled}>
-				設定を適用
-			</Button>
+			<Button on:click={importSettings} disabled={isApplyButtonDisabled}>設定を適用</Button>
 		</div>
 	</div>
 </Section>

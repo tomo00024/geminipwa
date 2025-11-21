@@ -55,7 +55,7 @@
 				<div
 					class="cursor-pointer rounded-lg border p-3 transition-all duration-200"
 					style:background-color={$appSettings.activeApiKeyId === apiKey.id
-						? '#262626'
+						? 'var(--bg-hover)'
 						: 'transparent'}
 					style:border-color={$appSettings.activeApiKeyId === apiKey.id ? '#737373' : '#525252'}
 					on:click={() => ($appSettings.activeApiKeyId = apiKey.id)}
@@ -100,14 +100,14 @@
 				</div>
 			{/each}
 		{:else}
-			<p class="px-2 text-sm text-stone-400">
+			<p class="px-2 text-sm text-text-off">
 				保存されているAPIキーはありません。「+ APIを追加」ボタンで追加してください。
 			</p>
 		{/if}
 	</div>
 	<div>
 		<Button on:click={addApiKey}>+ APIを追加</Button>
-		<p class="mt-2 text-sm text-stone-400">
+		<p class="mt-2 text-sm text-text-off">
 			APIキーはブラウザ内にのみ保存されます。入力や変更は自動的に保存されます。
 		</p>
 	</div>

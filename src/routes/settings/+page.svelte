@@ -45,7 +45,7 @@
 	}
 </script>
 
-<div class="flex h-screen flex-col bg-app-bg text-gray-200">
+<div class="flex h-screen flex-col bg-main-bg text-gray-200">
 	<!-- ヘッダー -->
 	<header class="flex flex-shrink-0 items-center justify-between border-b border-gray-700 p-4">
 		<h1 class="text-lg font-bold">アプリ設定</h1>

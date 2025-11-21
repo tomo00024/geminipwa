@@ -6,6 +6,9 @@
 	export let isOpen = false;
 	export let title = '';
 	export let width = 'max-w-md'; // default width class
+	export let side: 'left' | 'right' = 'right';
+
+	export let customLayout = false;
 
 	const dispatch = createEventDispatcher();
 
@@ -52,40 +55,54 @@
 
 	<!-- Drawer Panel -->
 	<div
-		class="fixed inset-y-0 right-0 z-50 flex h-full w-full {width} flex-col bg-app-bg shadow-xl"
-		transition:fly={{ x: 300, duration: 300, easing: cubicOut }}
+		class="fixed inset-y-0 z-50 flex h-full w-full {width} flex-col bg-main-bg shadow-xl {side ===
+		'left'
+			? 'left-0'
+			: 'right-0'}"
+		transition:fly={{ x: side === 'left' ? -300 : 300, duration: 300, easing: cubicOut }}
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="drawer-title"
 	>
 		<!-- Header -->
-		<div class="flex items-center justify-between border-b border-stone-700 px-4 py-2">
+		<div
+			class="flex flex-shrink-0 items-center justify-between border-b border-stone-700 px-4 py-2"
+		>
 			<h2 id="drawer-title" class="text-lg font-semibold text-text-main">{title}</h2>
-			<button
-				on:click={close}
-				class="rounded-md p-1 text-text-muted hover:bg-stone-800 hover:text-stone-100 focus:ring-2 focus:ring-stone-500 focus:outline-none"
-				aria-label="Close"
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-6 w-6"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
+			<div class="flex items-center gap-12">
+				<slot name="header-actions" />
+				<button
+					on:click={close}
+					class="rounded-md p-1 text-text-off hover:bg-bg-hover hover:text-text-main focus:ring-2 focus:ring-stone-500 focus:outline-none"
+					aria-label="Close"
 				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M6 18L18 6M6 6l12 12"
-					/>
-				</svg>
-			</button>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-6 w-6"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
+					</svg>
+				</button>
+			</div>
 		</div>
 
 		<!-- Content -->
-		<div class="flex-1 overflow-y-auto p-4">
-			<slot />
-		</div>
+		{#if customLayout}
+			<div class="flex flex-1 flex-col overflow-hidden">
+				<slot />
+			</div>
+		{:else}
+			<div class="flex-1 overflow-y-auto p-4">
+				<slot />
+			</div>
+		{/if}
 	</div>
 {/if}

@@ -90,7 +90,7 @@
 		<p class="text-sm text-red-500">{modelFetchError}</p>
 	{/if}
 
-	<p class="text-sm text-stone-400">
+	<p class="text-sm text-text-off">
 		チャットで使用するAIモデルを選択します。更新ボタンでGoogleから最新のモデル一覧を取得・保存できます。
 	</p>
 </Section>

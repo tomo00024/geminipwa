@@ -6,7 +6,7 @@
 
 <section class="mb-8">
 	<h2 class="text-lg font-bold text-text-main">{title}</h2>
-	<div class="mt-4 space-y-4">
+	<div class="mt-4 space-y-4 text-text-off">
 		<slot />
 	</div>
 </section>

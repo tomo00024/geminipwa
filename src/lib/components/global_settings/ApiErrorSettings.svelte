@@ -25,7 +25,7 @@
 	>
 		<!-- 1つ目のセット: 回数 -->
 		<div class="flex items-center gap-2">
-			<label for="max-retries" class="text-sm whitespace-nowrap"> 回数: </label>
+			<label for="max-retries" class="text-sm whitespace-nowrap text-text-off"> 回数: </label>
 			<Input
 				id="max-retries"
 				type="number"
@@ -37,7 +37,9 @@
 
 		<!-- 2つ目のセット: 待機時間 -->
 		<div class="flex items-center gap-2">
-			<label for="initial-wait" class="text-sm whitespace-nowrap"> 一回目の待機時間(ms): </label>
+			<label for="initial-wait" class="text-sm whitespace-nowrap text-text-off">
+				一回目の待機時間(ms):
+			</label>
 			<Input
 				id="initial-wait"
 				type="number"

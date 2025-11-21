@@ -70,7 +70,7 @@
 <Section title="トークン使用履歴">
 	<div class="space-y-6">
 		<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-			<p class="text-sm text-stone-400">Gemini APIのトークン使用量を確認できます。（目安）</p>
+			<p class="text-sm text-text-off">Gemini APIのトークン使用量を確認できます。（目安）</p>
 			<div class="w-full sm:w-48">
 				<Select bind:value={selectedRange}>
 					<option value="day">本日 (Day)</option>
@@ -84,8 +84,8 @@
 		<!-- 集計カード -->
 		{#if rangeStats}
 			<div class="rounded-lg border border-stone-600 bg-transparent p-4">
-				<div class="mb-3 text-sm font-medium text-stone-400">
-					集計期間: <span class="text-stone-200">{rangeStats.periodLabel}</span>
+				<div class="mb-3 text-sm font-medium text-text-off">
+					集計期間: <span class="text-text-main">{rangeStats.periodLabel}</span>
 				</div>
 				<div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
 					<div class="rounded-md bg-stone-700/50 p-3">
@@ -95,20 +95,20 @@
 						</div>
 					</div>
 					<div class="rounded-md bg-stone-700/30 p-3">
-						<div class="text-xs text-stone-400">入力 (Prompt)</div>
-						<div class="mt-1 text-lg font-semibold text-stone-200">
+						<div class="text-xs text-text-off">入力 (Prompt)</div>
+						<div class="mt-1 text-lg font-semibold text-text-main">
 							{rangeStats.input.toLocaleString()}
 						</div>
 					</div>
 					<div class="rounded-md bg-stone-700/30 p-3">
-						<div class="text-xs text-stone-400">出力 (Response)</div>
-						<div class="mt-1 text-lg font-semibold text-stone-200">
+						<div class="text-xs text-text-off">出力 (Response)</div>
+						<div class="mt-1 text-lg font-semibold text-text-main">
 							{rangeStats.output.toLocaleString()}
 						</div>
 					</div>
 					<div class="rounded-md bg-stone-700/30 p-3">
-						<div class="text-xs text-stone-400">思考 (Thinking)</div>
-						<div class="mt-1 text-lg font-semibold text-stone-200">
+						<div class="text-xs text-text-off">思考 (Thinking)</div>
+						<div class="mt-1 text-lg font-semibold text-text-main">
 							{rangeStats.thinking.toLocaleString()}
 						</div>
 					</div>
@@ -127,7 +127,7 @@
 				</div>
 			</div>
 		{/if}
-		<div class="rounded-lg border border-stone-600 bg-transparent p-4 text-xs text-stone-400">
+		<div class="rounded-lg border border-stone-600 bg-transparent p-4 text-xs text-text-off">
 			<p class="mb-1">
 				<span class="font-bold text-emerald-400">● コスト仕様:</span>
 				暗黙的キャッシュ（Implicit Caching）は一定長以上の共通プレフィックス（2.5Pro: 4096+）に対し自動適用され、入力コストを大幅に削減（約90%OFF）しますがストレージ料金は発生しません。

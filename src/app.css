@@ -1,103 +1,45 @@
 @import 'tailwindcss';
 
 @theme {
-	--color-app-bg: var(--bg-app);
-	--color-text-base: var(--text-base);
-
-	--color-bubble-ai-bg: var(--bubble-ai-bg);
-	--color-bubble-ai-text: var(--bubble-ai-text);
-
-	--color-bubble-user-bg: var(--bubble-user-bg);
-	--color-bubble-user-text: var(--bubble-user-text);
-
-	--color-btn-primary-bg: var(--btn-primary-bg);
-	--color-btn-primary-text: var(--btn-primary-text);
-	--color-btn-primary-hover-bg: var(--btn-primary-hover-bg);
-
-	--color-btn-secondary-bg: var(--btn-secondary-bg);
-	--color-btn-secondary-text: var(--btn-secondary-text);
-
-	--color-btn-menu-bg: var(--btn-menu-bg);
-	--color-btn-menu-text: var(--btn-menu-text);
-	--color-btn-menu-border: var(--btn-menu-border);
-	--color-btn-menu-hover-bg: var(--btn-menu-hover-bg);
-	--color-btn-menu-hover-border: var(--btn-menu-hover-border);
-
-	--color-border-base: var(--border-color);
-	--color-code-bg: var(--code-bg);
-	--color-code-text: var(--code-text);
-
 	--color-text-main: var(--text-main);
-	--color-text-muted: var(--text-muted);
-	--color-text-disabled: var(--text-disabled);
-	--color-text-inverse: var(--text-inverse);
+	--color-text-off: var(--text-off);
+	--color-main-bg: var(--bg-main);
+	--color-btn-primary-bg: var(--btn-primary-bg);
+	--color-btn-secondary-bg: var(--btn-secondary-bg);
+	--color-bg-hover: var(--bg-hover);
+	--color-bg-bubble-user: var(--bg-bubble-user);
+	--color-bg-bubble-ai: var(--bg-bubble-ai);
 }
 
 :root {
-	/* アプリケーション全体の背景とテキスト */
-	--bg-app: #171717;
-	/* Stone 900 */
-	--text-base: #e7e5e4;
-	/* Stone 200 */
+	/* 基本テキスト e0e0e0*/
+	--text-main: #dbdbdb;
 
-	/* 汎用テキストカラー */
-	--text-main: #e7e5e4;
-	/* Stone 200 */
-	--text-muted: #a8a29e;
-	/* Stone 400 */
-	--text-disabled: #57534e;
-	/* Stone 600 */
-	--text-inverse: #292524;
-	/* Stone 800 */
+	/* オフのテキスト acacac*/
+	--text-off: #7a7878;
 
-	/* AIのチャットバブル */
-	--bubble-ai-bg: #f5f5f4;
-	/* Stone 100 */
-	--bubble-ai-text: #44403c;
-	/* Stone 700 */
+	/* 基本背景色 171717*/
+	--bg-main: #111111;
 
-	/* ユーザーのチャットバブル */
-	--bubble-user-bg: #133a0e;
-	/* Green */
-	--bubble-user-text: #e7e5e4;
-	/* Stone 200 */
+	/* ボタン・浮き出し要素 (AIバブル含む)d8d8d8 */
+	--btn-primary-bg: #292929;
 
-	/* プライマリーボタン (Stone 200 base) */
-	--btn-primary-bg: #e7e5e4;
-	/* Stone 200 */
-	--btn-primary-text: #1c1917;
-	/* Stone 900 */
-	--btn-primary-hover-bg: #d6d3d1;
-	/* Stone 300 */
+	/* セグメントのオフ色 e7e7e7*/
+	--btn-secondary-bg: #1d1d1d;
 
-	/* セカンダリーボタン / メニューボタン */
-	--btn-secondary-bg: #e7e5e4;
-	/* Stone 200 */
-	--btn-secondary-text: #44403c;
-	/* Stone 700 */
-	--btn-menu-bg: #fafaf9;
-	/* Stone 50 */
-	--btn-menu-text: #44403c;
-	/* Stone 700 */
-	--btn-menu-border: #e7e5e4;
-	/* Stone 200 */
-	--btn-menu-hover-bg: #f5f5f4;
-	/* Stone 100 */
-	--btn-menu-hover-border: #d6d3d1;
-	/* Stone 300 */
+	/* ホバー色 d6d3d1*/
+	--bg-hover: #1f1f1f;
 
-	/* ボーダーとその他 */
-	--border-color: #d6d3d1;
-	/* Stone 300 */
-	--code-bg: #e7e5e4;
-	/* Stone 200 */
-	--code-text: #44403c;
-	/* Stone 700 */
+	/* ユーザーバブル */
+	--bg-bubble-user: #133a0e;
+
+	/* AIバブル */
+	--bg-bubble-ai: #202020;
 }
 
 body {
-	background-color: var(--bg-app);
-	color: var(--text-base);
+	background-color: var(--c-bg-main);
+	color: var(--c-text-main);
 }
 
 ::view-transition-old(root) {
@@ -128,4 +70,13 @@ body {
 		transform: translateY(0);
 		opacity: 1;
 	}
+}
+
+@utility no-scrollbar {
+	&::-webkit-scrollbar {
+		display: none;
+	}
+
+	-ms-overflow-style: none;
+	scrollbar-width: none;
 }

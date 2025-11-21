@@ -10,14 +10,14 @@
 
 <div class={className}>
 	{#if label}
-		<label for={id} class="mb-1 block text-lg font-bold text-text-main">{label}</label>
+		<label for={id} class="text-text-main mb-1 block text-lg font-bold">{label}</label>
 	{/if}
 	<select
 		{id}
 		bind:value
 		on:change
 		{disabled}
-		class="w-full rounded-lg border border-stone-600 bg-transparent px-3 py-2 text-text-main focus:outline-none disabled:opacity-50 [&>option]:text-text-inverse"
+		class="text-text-main [&>option]:text-text-inverse w-full rounded-lg border border-stone-600 bg-transparent px-3 py-2 focus:outline-none disabled:opacity-50"
 		{...$$restProps}
 	>
 		{#if options && options.length > 0}

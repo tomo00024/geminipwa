@@ -4,8 +4,11 @@
 	import { sessions } from '$lib/stores';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
-	import { createNewSession } from '$lib/utils';
+	import { createNewSession, generateUUID } from '$lib/utils';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { onMount, onDestroy } from 'svelte';
+
+	export let showNewButton = true;
 
 	const dispatch = createEventDispatcher();
 
@@ -20,73 +23,481 @@
 		close();
 	}
 
-	function handleDeleteSession(id: string, event: Event): void {
-		event.stopPropagation();
-		if (!confirm('このセッションを削除しますか？この操作は取り消せません。')) {
-			return;
-		}
-		sessions.update((currentSessions) => currentSessions.filter((session) => session.id !== id));
-	}
-
 	function handleSessionClick(id: string): void {
 		goto(`${base}/session/${id}`);
 		close();
 	}
+
+	// Menu Logic
+	let activeMenuSessionId: string | null = null;
+	let editingSessionId: string | null = null;
+	let editingTitle = '';
+	let inputElement: HTMLInputElement;
+
+	function toggleMenu(e: MouseEvent, sessionId: string) {
+		e.stopPropagation();
+		if (activeMenuSessionId === sessionId) {
+			activeMenuSessionId = null;
+		} else {
+			activeMenuSessionId = sessionId;
+		}
+	}
+
+	function closeMenu() {
+		activeMenuSessionId = null;
+	}
+
+	function handleWindowClick(e: MouseEvent) {
+		closeMenu();
+	}
+
+	// Actions
+	function startEditing(e: MouseEvent, session: any) {
+		e.stopPropagation();
+		editingSessionId = session.id;
+		editingTitle = session.title;
+		activeMenuSessionId = null;
+		// Focus input after render
+		setTimeout(() => inputElement?.focus(), 0);
+	}
+
+	function saveTitle(session: any) {
+		if (editingTitle.trim() && editingTitle !== session.title) {
+			sessions.update((all) =>
+				all.map((s) =>
+					s.id === session.id
+						? { ...s, title: editingTitle.trim(), lastUpdatedAt: new Date().toISOString() }
+						: s
+				)
+			);
+		}
+		editingSessionId = null;
+	}
+
+	function handleKeyDown(e: KeyboardEvent, session: any) {
+		if (e.key === 'Enter') {
+			saveTitle(session);
+		} else if (e.key === 'Escape') {
+			editingSessionId = null;
+		}
+	}
+
+	function handlePublish(e: MouseEvent, session: any) {
+		e.stopPropagation();
+		activeMenuSessionId = null;
+		dispatch('publish', { session });
+		close();
+	}
+
+	function handleDuplicate(e: MouseEvent, session: any) {
+		e.stopPropagation();
+		activeMenuSessionId = null;
+		const now = new Date().toISOString();
+		const newSession = {
+			...JSON.parse(JSON.stringify(session)),
+			id: generateUUID(),
+			title: `${session.title} (コピー)`,
+			createdAt: now,
+			lastUpdatedAt: now
+		};
+		sessions.update((all) => [newSession, ...all]);
+		goto(`${base}/session/${newSession.id}`);
+		close();
+	}
+
+	function handleDelete(e: MouseEvent, session: any) {
+		e.stopPropagation();
+		activeMenuSessionId = null;
+		if (!confirm(`「${session.title}」を削除しますか？`)) return;
+
+		sessions.update((all) => all.filter((s) => s.id !== session.id));
+
+		// If deleted session is current, go home (handled by ChatLayout usually, but good to be safe)
+		// Actually HistoryDrawer doesn't know current session ID easily without props,
+		// but ChatLayout handles navigation if current session is deleted via its own handler.
+		// Here we just delete from store. If user is on that page, ChatLayout might need to react.
+		// For now, let's assume user might be on it.
+	}
+
+	// Grouping Logic
+	$: groupedSessions = groupSessions($sessions);
+
+	function groupSessions(allSessions: any[]) {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const yesterday = new Date(today);
+		yesterday.setDate(yesterday.getDate() - 1);
+		const sevenDaysAgo = new Date(today);
+		sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+		const groups = {
+			today: [] as any[],
+			yesterday: [] as any[],
+			last7Days: [] as any[],
+			older: [] as any[]
+		};
+
+		// Sort by date desc first
+		const sorted = [...allSessions].sort(
+			(a, b) => new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime()
+		);
+
+		for (const session of sorted) {
+			const date = new Date(session.lastUpdatedAt);
+			if (date >= today) {
+				groups.today.push(session);
+			} else if (date >= yesterday) {
+				groups.yesterday.push(session);
+			} else if (date >= sevenDaysAgo) {
+				groups.last7Days.push(session);
+			} else {
+				groups.older.push(session);
+			}
+		}
+		return groups;
+	}
 </script>
 
-<div class="flex h-full flex-col text-stone-200">
+<svelte:window on:click={handleWindowClick} />
+
+<div class="flex h-full flex-col text-text-main">
 	<!-- 新規セッションボタン -->
-	<div class="mb-4">
-		<Button variant="primary" class="w-full justify-center" on:click={handleNewSession}>
-			新規セッション
-		</Button>
-	</div>
+	{#if showNewButton}
+		<div class="mb-4">
+			<Button variant="primary" class="w-full justify-center" on:click={handleNewSession}>
+				新規セッション
+			</Button>
+		</div>
+	{/if}
 
 	<!-- セッションリスト -->
-	<div class="flex-1">
+	<div class="flex-1 space-y-6">
 		{#if $sessions.length === 0}
-			<p class="mt-4 text-center text-stone-500">履歴はありません。</p>
+			<p class="mt-4 text-center text-text-off">履歴はありません。</p>
 		{:else}
-			<ul class="space-y-2">
-				{#each [...$sessions].sort((a, b) => new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime()) as session (session.id)}
-					<li>
-						<div
-							class="group flex cursor-pointer items-center justify-between rounded-lg border border-stone-700 bg-transparent p-3 transition hover:bg-stone-800/50"
-							on:click={() => handleSessionClick(session.id)}
-							on:keydown={(e) => e.key === 'Enter' && handleSessionClick(session.id)}
-							role="button"
-							tabindex="0"
-						>
-							<div class="flex-grow overflow-hidden">
-								<div class="truncate font-semibold text-stone-200">{session.title}</div>
-								<div class="mt-0.5 text-xs text-stone-400">
-									{new Date(session.lastUpdatedAt).toLocaleString('ja-JP')}
-								</div>
-							</div>
-							<div class="ml-2">
-								<button
-									class="rounded p-1 text-stone-500 hover:bg-red-900/30 hover:text-red-400"
-									on:click={(e) => handleDeleteSession(session.id, e)}
-									title="削除"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										class="h-4 w-4"
-										viewBox="0 0 20 20"
-										fill="currentColor"
-									>
-										<path
-											fill-rule="evenodd"
-											d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-											clip-rule="evenodd"
+			{#if groupedSessions.today.length > 0}
+				<div>
+					<h3 class="mb-2 px-2 text-xs font-bold text-text-off">今日</h3>
+					<ul class="space-y-1">
+						{#each groupedSessions.today as session (session.id)}
+							<li>
+								<div class="group relative flex items-center rounded-md hover:bg-bg-hover">
+									{#if editingSessionId === session.id}
+										<input
+											bind:this={inputElement}
+											type="text"
+											bind:value={editingTitle}
+											on:blur={() => saveTitle(session)}
+											on:keydown={(e) => handleKeyDown(e, session)}
+											on:click|stopPropagation
+											class="w-full bg-transparent px-2 py-2 text-sm text-text-main focus:outline-none"
 										/>
-									</svg>
-								</button>
-							</div>
-						</div>
-					</li>
-				{/each}
-			</ul>
+									{:else}
+										<button
+											class="flex-1 truncate px-2 py-2 text-left text-sm text-text-main hover:text-text-main"
+											on:click={() => handleSessionClick(session.id)}
+										>
+											{session.title}
+										</button>
+										<button
+											class="p-2 text-text-off hover:text-text-main"
+											on:click={(e) => toggleMenu(e, session.id)}
+										>
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-4 w-4"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+												/>
+											</svg>
+										</button>
+										{#if activeMenuSessionId === session.id}
+											<div
+												class="ring-opacity-5 absolute top-8 right-0 z-50 w-32 rounded-md bg-stone-800 py-1 shadow-lg ring-1 ring-black"
+											>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-text-main hover:bg-bg-hover hover:text-white"
+													on:click={(e) => startEditing(e, session)}
+												>
+													タイトル編集
+												</button>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-text-main hover:bg-bg-hover hover:text-white"
+													on:click={(e) => handlePublish(e, session)}
+												>
+													投稿
+												</button>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-text-main hover:bg-bg-hover hover:text-white"
+													on:click={(e) => handleDuplicate(e, session)}
+												>
+													複製
+												</button>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-bg-hover hover:text-red-300"
+													on:click={(e) => handleDelete(e, session)}
+												>
+													削除
+												</button>
+											</div>
+										{/if}
+									{/if}
+								</div>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
+
+			{#if groupedSessions.yesterday.length > 0}
+				<div>
+					<h3 class="mb-2 px-2 text-xs font-bold text-text-off">昨日</h3>
+					<ul class="space-y-1">
+						{#each groupedSessions.yesterday as session (session.id)}
+							<li>
+								<div class="group relative flex items-center rounded-md hover:bg-bg-hover">
+									{#if editingSessionId === session.id}
+										<input
+											bind:this={inputElement}
+											type="text"
+											bind:value={editingTitle}
+											on:blur={() => saveTitle(session)}
+											on:keydown={(e) => handleKeyDown(e, session)}
+											on:click|stopPropagation
+											class="w-full bg-transparent px-2 py-2 text-sm text-text-main focus:outline-none"
+										/>
+									{:else}
+										<button
+											class="flex-1 truncate px-2 py-2 text-left text-sm text-text-main hover:text-text-main"
+											on:click={() => handleSessionClick(session.id)}
+										>
+											{session.title}
+										</button>
+										<button
+											class="p-2 text-text-off hover:text-text-main"
+											on:click={(e) => toggleMenu(e, session.id)}
+										>
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-4 w-4"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+												/>
+											</svg>
+										</button>
+										{#if activeMenuSessionId === session.id}
+											<div
+												class="ring-opacity-5 absolute top-8 right-0 z-50 w-32 rounded-md bg-stone-800 py-1 shadow-lg ring-1 ring-black"
+											>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-text-main hover:bg-bg-hover hover:text-white"
+													on:click={(e) => startEditing(e, session)}
+												>
+													タイトル編集
+												</button>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-text-main hover:bg-bg-hover hover:text-white"
+													on:click={(e) => handlePublish(e, session)}
+												>
+													投稿
+												</button>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-text-main hover:bg-bg-hover hover:text-white"
+													on:click={(e) => handleDuplicate(e, session)}
+												>
+													複製
+												</button>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-bg-hover hover:text-red-300"
+													on:click={(e) => handleDelete(e, session)}
+												>
+													削除
+												</button>
+											</div>
+										{/if}
+									{/if}
+								</div>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
+
+			{#if groupedSessions.last7Days.length > 0}
+				<div>
+					<h3 class="mb-2 px-2 text-xs font-bold text-text-off">過去7日間</h3>
+					<ul class="space-y-1">
+						{#each groupedSessions.last7Days as session (session.id)}
+							<li>
+								<div class="group relative flex items-center rounded-md hover:bg-bg-hover">
+									{#if editingSessionId === session.id}
+										<input
+											bind:this={inputElement}
+											type="text"
+											bind:value={editingTitle}
+											on:blur={() => saveTitle(session)}
+											on:keydown={(e) => handleKeyDown(e, session)}
+											on:click|stopPropagation
+											class="w-full bg-transparent px-2 py-2 text-sm text-text-main focus:outline-none"
+										/>
+									{:else}
+										<button
+											class="flex-1 truncate px-2 py-2 text-left text-sm text-text-main hover:text-text-main"
+											on:click={() => handleSessionClick(session.id)}
+										>
+											{session.title}
+										</button>
+										<button
+											class="p-2 text-text-off hover:text-text-main"
+											on:click={(e) => toggleMenu(e, session.id)}
+										>
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-4 w-4"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+												/>
+											</svg>
+										</button>
+										{#if activeMenuSessionId === session.id}
+											<div
+												class="ring-opacity-5 absolute top-8 right-0 z-50 w-32 rounded-md bg-stone-800 py-1 shadow-lg ring-1 ring-black"
+											>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-text-main hover:bg-bg-hover hover:text-white"
+													on:click={(e) => startEditing(e, session)}
+												>
+													タイトル編集
+												</button>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-text-main hover:bg-bg-hover hover:text-white"
+													on:click={(e) => handlePublish(e, session)}
+												>
+													投稿
+												</button>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-text-main hover:bg-bg-hover hover:text-white"
+													on:click={(e) => handleDuplicate(e, session)}
+												>
+													複製
+												</button>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-bg-hover hover:text-red-300"
+													on:click={(e) => handleDelete(e, session)}
+												>
+													削除
+												</button>
+											</div>
+										{/if}
+									{/if}
+								</div>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
+
+			{#if groupedSessions.older.length > 0}
+				<div>
+					<h3 class="mb-2 px-2 text-xs font-bold text-text-off">それ以前</h3>
+					<ul class="space-y-1">
+						{#each groupedSessions.older as session (session.id)}
+							<li>
+								<div class="group relative flex items-center rounded-md hover:bg-bg-hover">
+									{#if editingSessionId === session.id}
+										<input
+											bind:this={inputElement}
+											type="text"
+											bind:value={editingTitle}
+											on:blur={() => saveTitle(session)}
+											on:keydown={(e) => handleKeyDown(e, session)}
+											on:click|stopPropagation
+											class="w-full bg-transparent px-2 py-2 text-sm text-text-main focus:outline-none"
+										/>
+									{:else}
+										<button
+											class="flex-1 truncate px-2 py-2 text-left text-sm text-text-main hover:text-text-main"
+											on:click={() => handleSessionClick(session.id)}
+										>
+											{session.title}
+										</button>
+										<button
+											class="p-2 text-text-off hover:text-text-main"
+											on:click={(e) => toggleMenu(e, session.id)}
+										>
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-4 w-4"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+												/>
+											</svg>
+										</button>
+										{#if activeMenuSessionId === session.id}
+											<div
+												class="ring-opacity-5 absolute top-8 right-0 z-50 w-32 rounded-md bg-stone-800 py-1 shadow-lg ring-1 ring-black"
+											>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-text-main hover:bg-bg-hover hover:text-white"
+													on:click={(e) => startEditing(e, session)}
+												>
+													タイトル編集
+												</button>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-text-main hover:bg-bg-hover hover:text-white"
+													on:click={(e) => handlePublish(e, session)}
+												>
+													投稿
+												</button>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-text-main hover:bg-bg-hover hover:text-white"
+													on:click={(e) => handleDuplicate(e, session)}
+												>
+													複製
+												</button>
+												<button
+													class="block w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-bg-hover hover:text-red-300"
+													on:click={(e) => handleDelete(e, session)}
+												>
+													削除
+												</button>
+											</div>
+										{/if}
+									{/if}
+								</div>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>

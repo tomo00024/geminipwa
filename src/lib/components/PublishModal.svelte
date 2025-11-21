@@ -55,7 +55,7 @@
 <Modal isOpen={true} title="セッションの公開" size="lg" on:close={handleCancel}>
 	<!-- 1. 公開範囲の選択 -->
 	<div class="space-y-4">
-		<h3 class="text-base font-semibold text-stone-200">1. 公開範囲の選択 *</h3>
+		<h3 class="text-base font-semibold text-text-main">1. 公開範囲の選択 *</h3>
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 			<SelectionCard
 				title="テンプレートのみ公開"
@@ -83,21 +83,21 @@
 
 	<!-- 2. 公開情報の入力 -->
 	<div class="mt-6 space-y-4">
-		<h3 class="text-base font-semibold text-stone-200">2. 公開情報の入力</h3>
+		<h3 class="text-base font-semibold text-text-main">2. 公開情報の入力</h3>
 
 		<div>
-			<label for="title" class="mb-1 block text-sm font-medium text-stone-200">タイトル *</label>
+			<label for="title" class="mb-1 block text-sm font-medium text-text-main">タイトル *</label>
 			<Input type="text" id="title" bind:value={title} class="w-full" required />
 		</div>
 
 		<!-- ▼ 追加: モデル選択UI -->
 		<div>
-			<label for="model" class="mb-1 block text-sm font-medium text-stone-200">使用モデル</label>
+			<label for="model" class="mb-1 block text-sm font-medium text-text-main">使用モデル</label>
 			<Select id="model" bind:value={model} options={selectableModels} class="w-full" />
 		</div>
 
 		<div>
-			<label for="authorName" class="mb-1 block text-sm font-medium text-stone-200">作者名</label>
+			<label for="authorName" class="mb-1 block text-sm font-medium text-text-main">作者名</label>
 			<Input
 				type="text"
 				id="authorName"
@@ -107,11 +107,11 @@
 			/>
 		</div>
 		<div>
-			<label for="description" class="mb-1 block text-sm font-medium text-stone-200">説明文</label>
+			<label for="description" class="mb-1 block text-sm font-medium text-text-main">説明文</label>
 			<Textarea id="description" bind:value={description} rows={3} class="w-full" />
 		</div>
 		<div>
-			<label for="imageUrl" class="mb-1 block text-sm font-medium text-stone-200">画像URL</label>
+			<label for="imageUrl" class="mb-1 block text-sm font-medium text-text-main">画像URL</label>
 			<Input
 				type="url"
 				id="imageUrl"
@@ -121,18 +121,18 @@
 			/>
 		</div>
 		<div>
-			<label for="expiresAt" class="mb-1 block text-sm font-medium text-stone-200">有効期限</label>
+			<label for="expiresAt" class="mb-1 block text-sm font-medium text-text-main">有効期限</label>
 			<input
 				type="datetime-local"
 				id="expiresAt"
 				bind:value={expiresAt}
-				class="w-full rounded-lg border border-stone-600 bg-transparent px-3 py-2 text-sm text-stone-200 focus:outline-none"
+				class="w-full rounded-lg border border-stone-600 bg-transparent px-3 py-2 text-sm text-text-main focus:outline-none"
 			/>
 		</div>
 	</div>
 
 	<div slot="footer" class="flex w-full justify-end gap-3">
-		<Button variant="secondary" on:click={handleCancel}>キャンセル</Button>
+		<Button variant="primary" on:click={handleCancel}>キャンセル</Button>
 		<Button variant="primary" on:click={handleSubmit} disabled={!title || !contentScope || busy}>
 			{#if busy}処理中...{:else}同意して公開{/if}
 		</Button>

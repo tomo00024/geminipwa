@@ -20,7 +20,7 @@
 	}
 
 	function onUpdateEditingText(event: CustomEvent) {
-		chatSessionStore.updateEditingText(event.detail.id);
+		chatSessionStore.updateEditingText(event.detail);
 	}
 
 	function onCancelEditing() {
@@ -81,11 +81,9 @@
 						)}
 						{#if siblings.length > 1}
 							{@const currentIndex = siblings.findIndex((l) => l.id === log.id)}
-							<div
-								class="mt-2 flex w-full items-center justify-center gap-2 text-sm text-text-muted"
-							>
+							<div class="mt-2 flex w-full items-center justify-center gap-2 text-sm text-text-off">
 								<button
-									class="hover:bg-bg-surface-hover cursor-pointer rounded p-1 disabled:opacity-30"
+									class="cursor-pointer rounded p-1 hover:bg-bg-hover disabled:opacity-30"
 									disabled={currentIndex <= 0}
 									on:click={() =>
 										chatSessionStore.switchActiveResponse(
@@ -97,7 +95,7 @@
 								</button>
 								<span>{currentIndex + 1} / {siblings.length}</span>
 								<button
-									class="hover:bg-bg-surface-hover cursor-pointer rounded p-1 disabled:opacity-30"
+									class="cursor-pointer rounded p-1 hover:bg-bg-hover disabled:opacity-30"
 									disabled={currentIndex >= siblings.length - 1}
 									on:click={() =>
 										chatSessionStore.switchActiveResponse(
@@ -117,12 +115,12 @@
 		{#if isLoading}
 			<div class="flex w-full flex-col items-start">
 				{#if $appSettings.ui.chatDisplayMode === 'transcript' && $appSettings.ui.showSpeakerNameInTranscript}
-					<div class="mb-1 text-xs text-text-muted">Model</div>
+					<div class="mb-1 text-xs text-text-off">Model</div>
 				{/if}
 				<div
 					class="chat-bubble {$appSettings.ui.chatDisplayMode === 'transcript'
 						? 'max-w-full px-0 py-0'
-						: 'max-w-[95%] rounded-2xl bg-bubble-ai-bg px-4 py-4 text-bubble-ai-text'}"
+						: 'bg-bubble-ai-bg text-bubble-ai-text max-w-[95%] rounded-2xl px-4 py-4'}"
 				>
 					<LoadingIndicator size="sm" color="bg-stone-400" />
 				</div>

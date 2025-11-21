@@ -150,13 +150,13 @@
 	}
 </script>
 
-<div class="flex h-screen flex-col bg-app-bg text-stone-200">
+<div class="flex h-screen flex-col bg-main-bg text-text-main">
 	<!-- ヘッダー部分 -->
 	<div class="flex items-center justify-between p-4">
 		<h1 class="text-xl font-bold">セッション設定</h1>
 		<a
 			href="{base}/session/{$sessionId}"
-			class="rounded bg-stone-200 px-3 py-2 text-sm font-semibold text-stone-800 hover:bg-stone-300"
+			class="rounded bg-stone-200 px-3 py-2 text-sm font-semibold text-text-off hover:bg-bg-hover"
 		>
 			セッション画面
 		</a>

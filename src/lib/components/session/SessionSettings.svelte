@@ -7,6 +7,10 @@
 	import Section from '$lib/components/ui/Section.svelte';
 	import Toggle from '$lib/components/ui/Toggle.svelte';
 	import SelectionCard from '$lib/components/ui/SelectionCard.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import { createEventDispatcher } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 
 	// 各モードの設定コンポーネントをインポート
 	import StandardMode from '$lib/components/settings/StandardMode.svelte';
@@ -74,6 +78,17 @@
 			return allSessions;
 		});
 	}
+
+	const dispatch = createEventDispatcher();
+
+	function handleDeleteSession() {
+		if (!confirm('本当にこのセッションを削除しますか？\nこの操作は取り消せません。')) {
+			return;
+		}
+		sessions.update((currentSessions) => currentSessions.filter((s) => s.id !== currentSession.id));
+		dispatch('close');
+		goto(base);
+	}
 </script>
 
 <div class="space-y-8 pb-20">
@@ -132,6 +147,8 @@
 	<DiceRollSettings />
 	<StatusSettings />
 	<TriggerSettings />
+
+	<ImportExportSettings />
 
 	<ImportExportSettings />
 </div>

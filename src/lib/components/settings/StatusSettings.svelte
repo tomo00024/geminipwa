@@ -91,7 +91,7 @@
 </script>
 
 <Section title="ステータス設定">
-	<p class="mb-3 text-xs text-stone-400">
+	<p class="mb-3 text-xs text-text-off">
 		AIに `&#123;&#123;ステータス名: 値&#125;&#125;`
 		のように指示すると、各ステータスで設定された計算方法で値が変動します。
 	</p>
@@ -117,7 +117,7 @@
 						/>
 						<button
 							type="button"
-							class="rounded-md p-1 text-stone-400 hover:bg-stone-800 hover:text-stone-100 focus:ring-2 focus:ring-stone-500 focus:outline-none"
+							class="rounded-md p-1 text-text-off hover:bg-bg-hover hover:text-text-main focus:ring-2 focus:ring-stone-500 focus:outline-none"
 							on:click={() => removeCustomStatus(status.id)}
 							aria-label="Remove status {status.name}"
 						>

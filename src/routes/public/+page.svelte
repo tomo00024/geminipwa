@@ -61,13 +61,13 @@
 	}
 </script>
 
-<div class="flex h-screen flex-col bg-app-bg p-4 text-stone-200">
+<div class="flex h-screen flex-col bg-main-bg p-4 text-text-main">
 	<div class="mx-auto w-full max-w-3xl flex-1 overflow-y-auto pb-20">
 		<!-- ヘッダー -->
 		<div class="mb-6 flex items-center justify-between">
-			<h1 class="text-xl font-bold text-stone-200">公開セッション</h1>
+			<h1 class="text-xl font-bold text-text-main">公開セッション</h1>
 			<a href="{base}/">
-				<Button variant="secondary">履歴画面</Button>
+				<Button variant="primary">履歴画面</Button>
 			</a>
 		</div>
 		<p class="mb-6 text-stone-400">他のユーザーが公開したセッションを読み込みます</p>
@@ -112,7 +112,7 @@
 				<!-- 注意: 本格的な検索はサーバーサイドで行うべきだが、ここでは既存の動作を維持しつつ表示 -->
 
 				{#if loadedFiles.length === 0}
-					<div class="py-16 text-center text-stone-500">
+					<div class="py-16 text-center text-text-off">
 						まだ公開されているセッションがありません。
 					</div>
 				{:else}
@@ -121,7 +121,7 @@
 						<!-- svelte-ignore a11y-no-static-element-interactions -->
 						<!-- svelte-ignore a11y-click-events-have-key-events -->
 						<div
-							class="cursor-pointer rounded-lg border border-stone-700 bg-transparent p-4 transition hover:bg-stone-800/50"
+							class="cursor-pointer rounded-lg border border-stone-700 bg-transparent p-4 transition hover:bg-bg-hover/50"
 							on:click={() => openModal(file)}
 						>
 							<div class="flex flex-row gap-4">
@@ -136,13 +136,13 @@
 								{/if}
 
 								<div class="flex flex-grow flex-col overflow-hidden">
-									<h3 class="truncate text-lg font-semibold text-stone-200">{file.title}</h3>
+									<h3 class="truncate text-lg font-semibold text-text-main">{file.title}</h3>
 
 									{#if file.tags && file.tags.length > 0}
 										<div class="mt-2 flex flex-wrap gap-2">
 											{#each file.tags as tag}
 												<span
-													class="rounded-full bg-stone-700 px-2.5 py-0.5 text-xs font-medium text-stone-300"
+													class="rounded-full bg-stone-700 px-2.5 py-0.5 text-xs font-medium text-text-off"
 												>
 													{tag}
 												</span>
@@ -156,7 +156,7 @@
 
 									<!-- メタ情報 -->
 									<div class="mt-3 flex items-center justify-between">
-										<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500">
+										<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-off">
 											<span>👤 {file.authorName}</span>
 											{#if file.model}
 												<span class="flex items-center gap-1" title="使用モデル">

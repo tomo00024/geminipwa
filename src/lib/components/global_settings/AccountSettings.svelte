@@ -213,7 +213,7 @@
 		</div>
 		<div class="space-y-3 border-t border-stone-600 pt-4">
 			<h3 class="font-bold text-red-600">アカウントの削除 (退会)</h3>
-			<p class="text-sm text-stone-400">
+			<p class="text-sm text-text-off">
 				アカウントを削除すると、サーバーにアップロードしたすべてのセッション履歴が完全に削除され、元に戻すことはできません。
 			</p>
 			<Button variant="danger" onclick={handleDeleteAccount} disabled={isDeleting}>
@@ -222,8 +222,8 @@
 		</div>
 	{:else}
 		<div class="space-y-3">
-			<Button variant="blue" onclick={() => signIn('google')}>Googleアカウントでログイン</Button>
-			<p class="text-sm text-stone-400">
+			<Button variant="primary" onclick={() => signIn('google')}>Googleアカウントでログイン</Button>
+			<p class="text-sm text-text-off">
 				ログインすると、セッション履歴をWeb上に公開して共有したり、Google
 				Driveへ自動でバックアップしたりできるようになります。
 			</p>
@@ -234,7 +234,7 @@
 <!-- データ管理 -->
 <Section title="データ管理">
 	<!-- Google Drive 連携 -->
-	<div class="space-y-2">
+	<div class="space-y-2 text-text-main">
 		<h3 class="font-bold">Google Drive バックアップ</h3>
 		<Toggle
 			id="drive-sync-enabled"
@@ -244,7 +244,7 @@
 		/>
 
 		{#if !$page.data.session}
-			<p class="pl-6 text-sm text-stone-400">
+			<p class="pl-6 text-sm text-text-off">
 				この機能を利用するには、まずGoogleアカウントでログインしてください。
 			</p>
 		{:else if isPermissionMissing}
@@ -257,13 +257,13 @@
 				<p class="mt-1 mb-2 text-xs text-yellow-700 dark:text-yellow-300">
 					Google Driveへのアクセスを許可してください。
 				</p>
-				<Button size="sm" variant="secondary" onclick={handleReconnect}>
+				<Button size="sm" variant="primary" onclick={handleReconnect}>
 					権限を付与する (再接続)
 				</Button>
 			</div>
 		{:else if $appSettings.backup.isEnabled}
 			<div class="space-y-2 pl-6">
-				<div class="text-sm text-stone-400">
+				<div class="text-sm text-text-off">
 					{#if $appSettings.backup.lastBackupAt}
 						最終同期: {new Date($appSettings.backup.lastBackupAt).toLocaleString()}
 					{:else}
@@ -278,14 +278,14 @@
 							今すぐバックアップ
 						{/if}
 					</Button>
-					<Button size="sm" variant="secondary" onclick={() => (isRestoreModalOpen = true)}>
+					<Button size="sm" variant="primary" onclick={() => (isRestoreModalOpen = true)}>
 						バックアップから復元...
 					</Button>
 					{#if backupMessage}
 						<span class="text-sm text-green-500">{backupMessage}</span>
 					{/if}
 				</div>
-				<p class="text-xs text-stone-400">
+				<p class="text-xs text-text-off">
 					※ 1日1つのバックアップファイル（gemini-backup-YYYY-MM-DD.json）が作成されます。<br />
 					※ 自動バックアップも「今すぐバックアップ」も、その日のファイルを上書き更新します。
 				</p>
@@ -307,7 +307,7 @@
 				onchange={handleImportJson}
 			/>
 		</div>
-		<p class="text-sm text-stone-400">
+		<p class="text-sm text-text-off">
 			セッション履歴をJSONファイルで手動でバックアップ・復元します。
 		</p>
 	</div>

@@ -115,7 +115,7 @@
 >
 	<!-- 発言者名 (トランスクリプトモードのみ) -->
 	{#if isTranscript && showSpeakerName}
-		<div class="text-text-muted mb-1 text-xs {isUser ? 'font-bold' : ''}">
+		<div class="mb-1 text-xs text-text-off {isUser ? 'font-bold' : ''}">
 			{isUser ? 'User' : 'Model'}
 		</div>
 	{/if}
@@ -131,8 +131,8 @@
 			? 'max-w-full rounded-lg px-0 py-0'
 			: `max-w-[95%] rounded-2xl px-4 py-0 ${
 					isUser
-						? 'bg-bubble-user-bg text-bubble-user-text [&_pre]:bg-bubble-user-bg [&_pre]:text-bubble-user-text'
-						: 'bg-bubble-ai-bg text-bubble-ai-text [&_pre]:bg-code-bg [&_pre]:text-code-text'
+						? '[&_pre]:bg-bg-bubble-user-bg bg-bg-bubble-user text-text-main [&_pre]:text-text-main'
+						: '[&_pre]:bg-bg-bubble-ai-bg bg-bg-bubble-ai text-text-main [&_pre]:text-text-main'
 				}`}
         [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:text-2xl [&_h1]:font-bold
         [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-bold
@@ -151,10 +151,10 @@
 					}}
 					class="min-h-[4rem] w-full resize-none overflow-hidden rounded border px-2 py-2
                     {isTranscript
-						? 'bg-bg-base border-border-base text-text-base'
+						? 'bg-bg-base border-border-base text-text-main'
 						: isUser
-							? 'border-bubble-user-bg bg-bubble-user-bg text-bubble-user-text'
-							: 'border-border-base bg-white text-text-base'}"
+							? 'border-transparent text-text-main'
+							: 'border-transparent text-text-main'}"
 					on:keydown={(e) => {
 						if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
 							e.preventDefault();
@@ -166,14 +166,14 @@
 				<div class="flex justify-end gap-2">
 					<button
 						type="button"
-						class="cursor-pointer rounded-lg border-none bg-btn-secondary-bg px-3 py-1 text-btn-secondary-text"
+						class="text-btn-primary-text cursor-pointer rounded-lg border-none bg-btn-primary-bg px-3 py-1"
 						on:click={() => dispatch('cancelEditing')}
 					>
 						キャンセル
 					</button>
 					<button
 						type="button"
-						class="cursor-pointer rounded-lg border-none bg-btn-primary-bg px-3 py-1 text-btn-primary-text"
+						class="text-btn-primary-text cursor-pointer rounded-lg border-none bg-btn-primary-bg px-3 py-1"
 						on:click={() => dispatch('saveEditing')}
 					>
 						保存
@@ -209,7 +209,7 @@
 			>
 				<button
 					type="button"
-					class="cursor-pointer rounded-full border border-btn-menu-border bg-btn-menu-bg px-3 py-1 text-sm whitespace-nowrap text-btn-menu-text hover:border-btn-menu-hover-border hover:bg-btn-menu-hover-bg"
+					class="border-btn-menu-border bg-btn-menu-bg text-btn-menu-text hover:border-btn-menu-hover-border cursor-pointer rounded-full border px-3 py-1 text-sm whitespace-nowrap hover:bg-bg-hover"
 					on:click|stopPropagation={handleCopy}
 					title="コピー"
 				>
@@ -221,19 +221,19 @@
 				</button>
 				<button
 					type="button"
-					class="cursor-pointer rounded-full border border-btn-menu-border bg-btn-menu-bg px-3 py-1 text-sm whitespace-nowrap text-btn-menu-text hover:border-btn-menu-hover-border hover:bg-btn-menu-hover-bg"
+					class="border-btn-menu-border bg-btn-menu-bg text-btn-menu-text hover:border-btn-menu-hover-border cursor-pointer rounded-full border px-3 py-1 text-sm whitespace-nowrap hover:bg-bg-hover"
 					on:click|stopPropagation={handleStartEditing}
 					title="編集">編集</button
 				>
 				<button
 					type="button"
-					class="cursor-pointer rounded-full border border-btn-menu-border bg-btn-menu-bg px-3 py-1 text-sm whitespace-nowrap text-btn-menu-text hover:border-btn-menu-hover-border hover:bg-btn-menu-hover-bg"
+					class="border-btn-menu-border bg-btn-menu-bg text-btn-menu-text hover:border-btn-menu-hover-border cursor-pointer rounded-full border px-3 py-1 text-sm whitespace-nowrap hover:bg-bg-hover"
 					on:click|stopPropagation={() => dispatch('retry', { id: log.id })}
 					title="再生成/リトライ">再生成</button
 				>
 				<button
 					type="button"
-					class="cursor-pointer rounded-full border border-btn-menu-border bg-btn-menu-bg px-3 py-1 text-sm whitespace-nowrap text-btn-menu-text hover:border-btn-menu-hover-border hover:bg-btn-menu-hover-bg"
+					class="border-btn-menu-border bg-btn-menu-bg text-btn-menu-text hover:border-btn-menu-hover-border cursor-pointer rounded-full border px-3 py-1 text-sm whitespace-nowrap hover:bg-bg-hover"
 					on:click|stopPropagation={() => dispatch('delete', { id: log.id })}
 					title="削除">削除</button
 				>
@@ -241,7 +241,7 @@
 					<button
 						type="button"
 						bind:this={metadataButton}
-						class="cursor-pointer rounded-full border border-btn-menu-border bg-btn-menu-bg px-3 py-1 text-sm whitespace-nowrap text-btn-menu-text hover:border-btn-menu-hover-border hover:bg-btn-menu-hover-bg"
+						class="border-btn-menu-border bg-btn-menu-bg text-btn-menu-text hover:border-btn-menu-hover-border cursor-pointer rounded-full border px-3 py-1 text-sm whitespace-nowrap hover:bg-bg-hover"
 						on:click|stopPropagation={toggleMetadata}
 						title="メタデータ">メタデータ</button
 					>
@@ -256,7 +256,7 @@
 			bind:this={metadataContainer}
 			class="mt-2 max-w-[95%] overflow-x-auto rounded-2xl p-4 text-sm
             {isTranscript
-				? 'bg-bg-surface border border-border-base text-text-base'
+				? 'bg-bg-surface border-border-base text-text-base border'
 				: isUser
 					? 'bg-bubble-user-bg text-bubble-user-text'
 					: 'bg-bubble-ai-bg text-bubble-ai-text'}"

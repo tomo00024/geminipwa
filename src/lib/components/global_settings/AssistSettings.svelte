@@ -21,7 +21,9 @@
 		class="ml-6 flex items-center space-x-2"
 		class:opacity-50={!$appSettings.assist.summarizeOnTokenOverflow}
 	>
-		<label for="token-threshold" class="text-sm whitespace-nowrap"> トークン数: </label>
+		<label for="token-threshold" class="text-sm whitespace-nowrap text-text-off">
+			トークン数:
+		</label>
 		<Input
 			id="token-threshold"
 			type="number"

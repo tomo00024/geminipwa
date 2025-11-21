@@ -18,7 +18,9 @@
 		label="チャットの文字サイズを変更"
 	/>
 	<div class="ml-6 flex items-center gap-2" class:opacity-50={!$appSettings.ui.useCustomFontSize}>
-		<label for="font-size-input" class="text-sm whitespace-nowrap"> サイズ(px): </label>
+		<label for="font-size-input" class="text-sm whitespace-nowrap text-text-off">
+			サイズ(px):
+		</label>
 		<Input
 			id="font-size-input"
 			type="number"
