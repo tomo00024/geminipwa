@@ -56,7 +56,7 @@ export const defaultUiSettings: UiSettings = {
 	showTokenCount: true,
 	useCustomFontSize: false,
 	chatFontSize: 16,
-	chatDisplayMode: 'bubble',
+	chatDisplayMode: 'transcript',
 	showSpeakerNameInTranscript: true
 };
 
@@ -74,7 +74,7 @@ export const defaultApiErrorHandlingSettings: ApiErrorHandlingSettings = {
  * アシスト機能のデフォルト値
  */
 export const defaultAssistSettings: AssistSettings = {
-	autoCorrectUrl: false,
+	autoCorrectUrl: true,
 	summarizeOnTokenOverflow: false,
 	tokenThreshold: 3000
 };

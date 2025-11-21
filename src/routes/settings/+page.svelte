@@ -5,6 +5,7 @@
 	import { derived } from 'svelte/store';
 
 	// Components
+	import SettingsSidebar from '$lib/components/settings/SettingsSidebar.svelte';
 	import ApiKeySettings from '$lib/components/global_settings/ApiKeySettings.svelte';
 	import AiModelSettings from '$lib/components/global_settings/AiModelSettings.svelte';
 	import SystemPromptSettings from '$lib/components/global_settings/SystemPromptSettings.svelte';
@@ -28,11 +29,24 @@
 			label: '履歴画面'
 		};
 	});
+
+	const categories = [
+		{ id: 'general', label: 'General' },
+		{ id: 'api_model', label: 'API & Model' },
+		{ id: 'generation', label: 'Generation' },
+		{ id: 'interface', label: 'Interface' }
+	];
+
+	let activeCategory = 'general';
+
+	function handleCategorySelect(event: CustomEvent<string>) {
+		activeCategory = event.detail;
+	}
 </script>
 
 <div class="flex h-screen flex-col bg-app-bg text-gray-200">
 	<!-- ヘッダー -->
-	<header class="flex flex-shrink-0 items-center justify-between p-4">
+	<header class="flex flex-shrink-0 items-center justify-between border-b border-gray-700 p-4">
 		<h1 class="text-lg font-bold">アプリ設定</h1>
 		<a
 			href={$returnPath.href}
@@ -42,18 +56,51 @@
 		</a>
 	</header>
 
-	<!-- コンテンツエリア -->
-	<div class="flex-1 overflow-y-auto px-4">
-		<div class="mx-auto max-w-3xl space-y-8 pb-20">
-			<ApiKeySettings />
-			<AiModelSettings />
-			<SystemPromptSettings />
-			<UiSettings />
-			<ApiErrorSettings />
-			<AssistSettings />
-			<GenerationSettings />
-			<TokenUsageSettings />
-			<AccountSettings />
+	<!-- コンテンツエリア (2カラムレイアウト) -->
+	<div class="flex flex-1 overflow-hidden">
+		<!-- サイドバー (デスクトップ: 左側固定, モバイル: 上部に表示するか、あるいはレスポンシブ対応が必要だが一旦固定幅で) -->
+		<aside
+			class="hidden w-64 flex-shrink-0 overflow-y-auto border-r border-gray-700 bg-gray-900/50 md:block"
+		>
+			<SettingsSidebar {categories} {activeCategory} on:select={handleCategorySelect} />
+		</aside>
+
+		<!-- モバイル用ナビゲーション (画面幅が狭い時のみ表示) -->
+		<div class="w-full overflow-x-auto border-b border-gray-700 bg-gray-900/50 md:hidden">
+			<div class="flex min-w-max p-2">
+				{#each categories as category}
+					<button
+						type="button"
+						on:click={() => (activeCategory = category.id)}
+						class="mr-2 rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-200 {activeCategory ===
+						category.id
+							? 'bg-blue-600 text-white'
+							: 'bg-gray-800 text-gray-300 hover:bg-gray-700'}"
+					>
+						{category.label}
+					</button>
+				{/each}
+			</div>
 		</div>
+
+		<!-- メインコンテンツ -->
+		<main class="flex-1 overflow-y-auto p-4 md:p-8">
+			<div class="mx-auto max-w-3xl space-y-8 pb-20">
+				{#if activeCategory === 'general'}
+					<AccountSettings />
+				{:else if activeCategory === 'api_model'}
+					<ApiKeySettings />
+					<AiModelSettings />
+					<ApiErrorSettings />
+				{:else if activeCategory === 'generation'}
+					<SystemPromptSettings />
+					<GenerationSettings />
+					<AssistSettings />
+				{:else if activeCategory === 'interface'}
+					<UiSettings />
+					<TokenUsageSettings />
+				{/if}
+			</div>
+		</main>
 	</div>
 </div>

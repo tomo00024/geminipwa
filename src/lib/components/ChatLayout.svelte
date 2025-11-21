@@ -6,7 +6,14 @@
 	import { createEventDispatcher, tick, onMount, onDestroy } from 'svelte';
 	import { appSettings } from '$lib/stores';
 	import { chatSessionStore } from '$lib/chatSessionStore';
+	import { ui } from '$lib/stores/ui';
 	import LoadingIndicator from '$lib/components/ui/LoadingIndicator.svelte';
+	import Drawer from '$lib/components/ui/Drawer.svelte';
+	import SessionSettings from '$lib/components/session/SessionSettings.svelte';
+	import PublishModal from '$lib/components/PublishModal.svelte';
+	import FindModal from '$lib/components/FindModal.svelte';
+	import HistoryDrawer from '$lib/components/HistoryDrawer.svelte';
+	import { sessions } from '$lib/stores';
 
 	export let userInput: string;
 	export let isLoading: boolean;
@@ -22,6 +29,7 @@
 	let isEditing = false;
 	let editingTitle = '';
 	let inputElement: HTMLInputElement;
+	let isSettingsOpen = false;
 
 	let textareaElement: HTMLTextAreaElement;
 
@@ -145,6 +153,105 @@
 	function handleBeforeUnload() {
 		saveScrollPosition();
 	}
+
+	let isMenuOpen = false;
+	let isPublishModalOpen = false;
+	let isFindModalOpen = false;
+	let isHistoryDrawerOpen = false;
+	let isSubmitting = false;
+
+	function openMenu() {
+		isMenuOpen = true;
+	}
+
+	function closeMenu() {
+		isMenuOpen = false;
+	}
+
+	function handleOpenSessionSettings() {
+		closeMenu();
+		isSettingsOpen = true;
+	}
+
+	function handleOpenAppSettings() {
+		closeMenu();
+		ui.openSettingsModal();
+	}
+
+	function handleOpenPublishModal() {
+		closeMenu();
+		isPublishModalOpen = true;
+	}
+
+	function handleOpenFindModal() {
+		closeMenu();
+		isFindModalOpen = true;
+	}
+
+	function handleOpenHistoryDrawer() {
+		closeMenu();
+		isHistoryDrawerOpen = true;
+	}
+
+	async function handleFinalPublish(event: CustomEvent) {
+		const { contentScope } = event.detail;
+		const sessionData = $chatSessionStore.session;
+
+		if (!sessionData || !contentScope) return;
+
+		appSettings.update((settings) => ({
+			...settings,
+			lastUsedAuthorName: event.detail.authorName || ''
+		}));
+		isSubmitting = true;
+
+		try {
+			const response = await fetch(`${base}/api/upload`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					...event.detail,
+					sessionId: sessionData.id,
+					sessionData: sessionData
+				})
+			});
+
+			if (!response.ok) {
+				const errorResponse = await response.json();
+				let errorMessage = errorResponse.message || 'アップロードに失敗しました。';
+
+				if (errorResponse.errors) {
+					const detailedErrors = Object.values(errorResponse.errors).flat().join('\n');
+					if (detailedErrors) {
+						errorMessage += `\n\n詳細:\n${detailedErrors}`;
+					}
+				}
+				throw new Error(errorMessage);
+			}
+
+			sessions.update((currentSessions) =>
+				currentSessions.map((session) => {
+					if (session.id === sessionData.id) {
+						return { ...session, title: event.detail.title };
+					}
+					return session;
+				})
+			);
+
+			// 現在のセッションストアも更新
+			const updatedSession = { ...sessionData, title: event.detail.title };
+			chatSessionStore.init(updatedSession);
+
+			const result = await response.json();
+			alert(`公開が完了しました！`);
+			isPublishModalOpen = false;
+		} catch (error: any) {
+			console.error(error);
+			alert(`エラー: ${error.message}`);
+		} finally {
+			isSubmitting = false;
+		}
+	}
 </script>
 
 <svelte:window on:beforeunload={handleBeforeUnload} />
@@ -153,12 +260,9 @@
 	<div class="flex-shrink-0 p-4">
 		<!-- ヘッダーブロック  -->
 		<div class="mb-4 flex items-center gap-4">
-			<a
-				href="{base}/"
-				class="flex-shrink-0 rounded bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300"
-			>
-				履歴画面
-			</a>
+			<!-- 左側: 空白 (以前の履歴ボタンは削除) -->
+
+			<!-- 中央: タイトル (編集可能) -->
 			<div class="min-w-0 flex-1">
 				{#if isEditing}
 					<input
@@ -211,18 +315,28 @@
 						</div>
 					</div>
 				{/if}
-				<a
-					href="{base}/settings?from=session/{sessionId}"
-					class="rounded bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300"
+				<!-- ハンバーガーメニューアイコン -->
+				<button
+					type="button"
+					on:click={openMenu}
+					class="rounded p-2 text-gray-600 hover:bg-gray-200 focus:ring-2 focus:ring-gray-400 focus:outline-none"
+					aria-label="Menu"
 				>
-					アプリ設定
-				</a>
-				<a
-					href="{base}/session/{sessionId}/settings"
-					class="rounded bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300"
-				>
-					セッション設定
-				</a>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-6 w-6"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M4 6h16M4 12h16M4 18h16"
+						/>
+					</svg>
+				</button>
 			</div>
 		</div>
 	</div>
@@ -270,3 +384,68 @@
 		</form>
 	</div>
 </div>
+
+<!-- メニュードロワー -->
+<Drawer bind:isOpen={isMenuOpen} title="メニュー" width="max-w-[240px]">
+	<div class="flex flex-col gap-2">
+		<button
+			type="button"
+			on:click={handleOpenHistoryDrawer}
+			class="block w-full rounded-md px-4 py-3 text-left text-gray-700 hover:bg-gray-100"
+		>
+			履歴画面
+		</button>
+		<button
+			type="button"
+			on:click={handleOpenFindModal}
+			class="block w-full rounded-md px-4 py-3 text-left text-gray-700 hover:bg-gray-100"
+		>
+			探す
+		</button>
+		<button
+			type="button"
+			on:click={handleOpenPublishModal}
+			class="block w-full rounded-md px-4 py-3 text-left text-gray-700 hover:bg-gray-100"
+		>
+			投稿
+		</button>
+		<button
+			type="button"
+			on:click={handleOpenSessionSettings}
+			class="block w-full rounded-md px-4 py-3 text-left text-gray-700 hover:bg-gray-100"
+		>
+			セッション設定
+		</button>
+		<button
+			type="button"
+			on:click={handleOpenAppSettings}
+			class="block w-full rounded-md px-4 py-3 text-left text-gray-700 hover:bg-gray-100"
+		>
+			アプリ設定
+		</button>
+	</div>
+</Drawer>
+
+<!-- セッション設定ドロワー -->
+<Drawer bind:isOpen={isSettingsOpen} title="セッション設定" width="max-w-2xl">
+	{#if $chatSessionStore.session}
+		<SessionSettings currentSession={$chatSessionStore.session} />
+	{/if}
+</Drawer>
+
+{#if isPublishModalOpen && $chatSessionStore.session}
+	<PublishModal
+		busy={isSubmitting}
+		initialTitle={$chatSessionStore.session.title}
+		on:submit={handleFinalPublish}
+		on:close={() => (isPublishModalOpen = false)}
+	/>
+{/if}
+
+{#if isFindModalOpen}
+	<FindModal on:close={() => (isFindModalOpen = false)} />
+{/if}
+
+<Drawer bind:isOpen={isHistoryDrawerOpen} title="履歴">
+	<HistoryDrawer on:close={() => (isHistoryDrawerOpen = false)} />
+</Drawer>

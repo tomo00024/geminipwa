@@ -15,8 +15,6 @@
 		sortedHistory.length > 0 ? sortedHistory[0].date : new Date().toISOString().split('T')[0];
 
 	$: rangeStats = (() => {
-		if (sortedHistory.length === 0) return null;
-
 		const latestDate = new Date(latestDateStr);
 		let startDate = new Date(latestDate);
 		let daysToSubtract = 0;
