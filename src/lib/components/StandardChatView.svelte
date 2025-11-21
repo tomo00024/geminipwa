@@ -4,9 +4,11 @@
 	import type { Log } from '$lib/types';
 	import { appSettings } from '$lib/stores';
 	import ChatBubble from './ChatBubble.svelte';
+	import LoadingIndicator from '$lib/components/ui/LoadingIndicator.svelte';
 
 	export let handleRetry: (userMessageId: string) => Promise<void>;
 	export let limit: number = 20;
+	export let isLoading: boolean = false;
 
 	$: paginatedLogs = $chatSessionStore.displayableLogs
 		? $chatSessionStore.displayableLogs.slice(-limit)
@@ -18,7 +20,7 @@
 	}
 
 	function onUpdateEditingText(event: CustomEvent) {
-		chatSessionStore.updateEditingText(event.detail);
+		chatSessionStore.updateEditingText(event.detail.id);
 	}
 
 	function onCancelEditing() {
@@ -68,7 +70,6 @@
 				on:saveEditing={onSaveEditing}
 				on:delete={onDelete}
 				on:retry={onRetry}
-				on:retry={onRetry}
 				displayMode={$appSettings.ui.chatDisplayMode}
 				showSpeakerName={$appSettings.ui.showSpeakerNameInTranscript}
 			>
@@ -81,7 +82,7 @@
 						{#if siblings.length > 1}
 							{@const currentIndex = siblings.findIndex((l) => l.id === log.id)}
 							<div
-								class="text-text-muted mt-2 flex w-full items-center justify-center gap-2 text-sm"
+								class="mt-2 flex w-full items-center justify-center gap-2 text-sm text-text-muted"
 							>
 								<button
 									class="hover:bg-bg-surface-hover cursor-pointer rounded p-1 disabled:opacity-30"
@@ -112,5 +113,20 @@
 				</div>
 			</ChatBubble>
 		{/each}
+
+		{#if isLoading}
+			<div class="flex w-full flex-col items-start">
+				{#if $appSettings.ui.chatDisplayMode === 'transcript' && $appSettings.ui.showSpeakerNameInTranscript}
+					<div class="mb-1 text-xs text-text-muted">Model</div>
+				{/if}
+				<div
+					class="chat-bubble {$appSettings.ui.chatDisplayMode === 'transcript'
+						? 'max-w-full px-0 py-0'
+						: 'max-w-[95%] rounded-2xl bg-bubble-ai-bg px-4 py-4 text-bubble-ai-text'}"
+				>
+					<LoadingIndicator size="sm" color="bg-stone-400" />
+				</div>
+			</div>
+		{/if}
 	</div>
 {/if}

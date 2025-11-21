@@ -13,7 +13,8 @@ import {
 
 export async function sendUserMessage(
     session: Session,
-    userInput: string
+    userInput: string,
+    signal?: AbortSignal
 ): Promise<void> {
     const settings = get(appSettings);
     const activeApiKey = settings.apiKeys.find((k) => k.id === settings.activeApiKeyId)?.key;
@@ -105,13 +106,15 @@ export async function sendUserMessage(
         newUserMessage.id,
         session.id,
         session.featureSettings,
-        updatedTriggers
+        updatedTriggers,
+        signal
     );
 }
 
 export async function retryMessage(
     session: Session,
-    userMessageId: string
+    userMessageId: string,
+    signal?: AbortSignal
 ): Promise<void> {
     const settings = get(appSettings);
     const activeApiKey = settings.apiKeys.find((k) => k.id === settings.activeApiKeyId)?.key;
@@ -153,7 +156,8 @@ export async function retryMessage(
         userMessageId,
         session.id,
         session.featureSettings,
-        updatedTriggers
+        updatedTriggers,
+        signal
     );
 }
 
@@ -163,7 +167,8 @@ async function getAiResponseAndUpdate(
     userMessageId: string,
     sessionId: string,
     featureSettings: FeatureSettings,
-    triggersToUpdateAfterSuccess: Trigger[] | undefined
+    triggersToUpdateAfterSuccess: Trigger[] | undefined,
+    signal?: AbortSignal
 ) {
     try {
         let currentAppSettings = get(appSettings);
@@ -187,7 +192,8 @@ async function getAiResponseAndUpdate(
                 currentModel,
                 currentAppSettings,
                 conversationContext,
-                finalUserInput
+                finalUserInput,
+                signal
             );
 
             if (result.metadata?.requiresApiKeyLoop) {
@@ -264,6 +270,7 @@ async function getAiResponseAndUpdate(
                         // トークン使用履歴を更新
                         if (newAiResponse.tokenUsage) {
                             const usage = newAiResponse.tokenUsage;
+                            const rawUsage = (result as any).usageMetadata; // rawデータから取得
                             const today = new Date().toISOString().split('T')[0];
                             tokenUsageHistory.update((history) => {
                                 const existingEntry = history.find((h) => h.date === today);
@@ -275,6 +282,12 @@ async function getAiResponseAndUpdate(
                                         existingEntry.thinkingTokens =
                                             (existingEntry.thinkingTokens || 0) + usage.thinking;
                                     }
+                                    // キャッシュトークン数の加算
+                                    if (rawUsage && rawUsage.cachedContentTokenCount) {
+                                        existingEntry.cachedTokens =
+                                            (existingEntry.cachedTokens || 0) +
+                                            rawUsage.cachedContentTokenCount;
+                                    }
                                     return history;
                                 } else {
                                     return [
@@ -284,7 +297,8 @@ async function getAiResponseAndUpdate(
                                             totalTokens: usage.total,
                                             inputTokens: usage.input,
                                             outputTokens: usage.output,
-                                            thinkingTokens: usage.thinking || 0
+                                            thinkingTokens: usage.thinking || 0,
+                                            cachedTokens: (rawUsage && rawUsage.cachedContentTokenCount) || 0
                                         }
                                     ];
                                 }
@@ -308,6 +322,14 @@ async function getAiResponseAndUpdate(
             }
         }
     } catch (error) {
+        if (
+            (error instanceof DOMException && error.name === 'AbortError') ||
+            (error instanceof Error && error.name === 'AbortError') ||
+            (error instanceof Error && error.message.includes('aborted'))
+        ) {
+            // AbortErrorは正常なキャンセル処理なのでエラーログを出さない
+            throw error;
+        }
         console.error('API Error:', error);
         throw error;
     }

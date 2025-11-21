@@ -4,7 +4,9 @@
 	export { className as class };
 </script>
 
-<section class="space-y-4 {className}">
-	<h2 class="text-lg font-bold text-stone-200">{title}</h2>
-	<slot />
+<section class="mb-8">
+	<h2 class="text-lg font-bold text-text-main">{title}</h2>
+	<div class="mt-4 space-y-4">
+		<slot />
+	</div>
 </section>

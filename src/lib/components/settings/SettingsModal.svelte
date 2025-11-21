@@ -18,7 +18,8 @@
 		{ id: 'general', label: 'General' },
 		{ id: 'api_model', label: 'API & Model' },
 		{ id: 'generation', label: 'Generation' },
-		{ id: 'interface', label: 'Interface' }
+		{ id: 'interface', label: 'Interface' },
+		{ id: 'usage', label: 'Usage' }
 	];
 
 	let activeCategory = 'general';
@@ -84,6 +85,7 @@
 					<AssistSettings />
 				{:else if activeCategory === 'interface'}
 					<UiSettings />
+				{:else if activeCategory === 'usage'}
 					<TokenUsageSettings />
 				{/if}
 			</div>

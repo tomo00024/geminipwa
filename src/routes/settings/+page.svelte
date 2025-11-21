@@ -31,10 +31,11 @@
 	});
 
 	const categories = [
-		{ id: 'general', label: 'General' },
+		{ id: 'general', label: 'General (一般)' },
 		{ id: 'api_model', label: 'API & Model' },
-		{ id: 'generation', label: 'Generation' },
-		{ id: 'interface', label: 'Interface' }
+		{ id: 'generation', label: 'Generation (生成)' },
+		{ id: 'interface', label: 'Interface (表示)' },
+		{ id: 'usage', label: 'Usage (使用状況)' }
 	];
 
 	let activeCategory = 'general';
@@ -44,13 +45,13 @@
 	}
 </script>
 
-<div class="flex h-screen flex-col bg-app-bg text-stone-200">
+<div class="flex h-screen flex-col bg-app-bg text-gray-200">
 	<!-- ヘッダー -->
-	<header class="flex flex-shrink-0 items-center justify-between border-b border-stone-700 p-4">
+	<header class="flex flex-shrink-0 items-center justify-between border-b border-gray-700 p-4">
 		<h1 class="text-lg font-bold">アプリ設定</h1>
 		<a
 			href={$returnPath.href}
-			class="rounded bg-stone-200 px-3 py-2 text-sm font-semibold text-stone-800 hover:bg-stone-300"
+			class="rounded bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300"
 		>
 			{$returnPath.label}
 		</a>
@@ -60,13 +61,13 @@
 	<div class="flex flex-1 overflow-hidden">
 		<!-- サイドバー (デスクトップ: 左側固定, モバイル: 上部に表示するか、あるいはレスポンシブ対応が必要だが一旦固定幅で) -->
 		<aside
-			class="hidden w-64 flex-shrink-0 overflow-y-auto border-r border-stone-700 bg-stone-900/50 md:block"
+			class="hidden w-64 flex-shrink-0 overflow-y-auto border-r border-gray-700 bg-gray-900/50 md:block"
 		>
 			<SettingsSidebar {categories} {activeCategory} on:select={handleCategorySelect} />
 		</aside>
 
 		<!-- モバイル用ナビゲーション (画面幅が狭い時のみ表示) -->
-		<div class="w-full overflow-x-auto border-b border-stone-700 bg-stone-900/50 md:hidden">
+		<div class="w-full overflow-x-auto border-b border-gray-700 bg-gray-900/50 md:hidden">
 			<div class="flex min-w-max p-2">
 				{#each categories as category}
 					<button
@@ -75,7 +76,7 @@
 						class="mr-2 rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-200 {activeCategory ===
 						category.id
 							? 'bg-blue-600 text-white'
-							: 'bg-stone-800 text-stone-300 hover:bg-stone-700'}"
+							: 'bg-gray-800 text-gray-300 hover:bg-gray-700'}"
 					>
 						{category.label}
 					</button>
@@ -98,6 +99,7 @@
 					<AssistSettings />
 				{:else if activeCategory === 'interface'}
 					<UiSettings />
+				{:else if activeCategory === 'usage'}
 					<TokenUsageSettings />
 				{/if}
 			</div>

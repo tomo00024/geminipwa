@@ -26,6 +26,11 @@
 	--color-border-base: var(--border-color);
 	--color-code-bg: var(--code-bg);
 	--color-code-text: var(--code-text);
+
+	--color-text-main: var(--text-main);
+	--color-text-muted: var(--text-muted);
+	--color-text-disabled: var(--text-disabled);
+	--color-text-inverse: var(--text-inverse);
 }
 
 :root {
@@ -34,6 +39,16 @@
 	/* Stone 900 */
 	--text-base: #e7e5e4;
 	/* Stone 200 */
+
+	/* 汎用テキストカラー */
+	--text-main: #e7e5e4;
+	/* Stone 200 */
+	--text-muted: #a8a29e;
+	/* Stone 400 */
+	--text-disabled: #57534e;
+	/* Stone 600 */
+	--text-inverse: #292524;
+	/* Stone 800 */
 
 	/* AIのチャットバブル */
 	--bubble-ai-bg: #f5f5f4;

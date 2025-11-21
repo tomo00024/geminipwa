@@ -3,9 +3,12 @@
 import { db } from '$lib/server/db';
 import type { PageServerLoad } from './$types';
 import { POSTGRES_URL } from '$env/static/private';
+import { checkRateLimit } from '$lib/server/rateLimit';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, getClientAddress }) => {
 	const session = await locals.auth();
+	const clientIp = getClientAddress();
+	await checkRateLimit(`public_page:${clientIp}`, 60, 60);
 
 	if (!POSTGRES_URL) {
 		return {

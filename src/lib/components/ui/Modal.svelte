@@ -81,12 +81,12 @@
 			<div
 				class="flex flex-shrink-0 items-center justify-between border-b border-stone-700 px-4 py-2"
 			>
-				<h2 id="modal-title" class="text-lg font-semibold text-stone-200">{title}</h2>
+				<h2 id="modal-title" class="text-lg font-semibold text-text-main">{title}</h2>
 				<div class="flex items-center gap-2">
 					<slot name="header-extra" />
 					<button
 						on:click={close}
-						class="rounded-md p-1 text-stone-400 hover:bg-stone-700 hover:text-white focus:outline-none"
+						class="rounded-md p-1 text-text-muted hover:bg-stone-700 hover:text-white focus:outline-none"
 						aria-label="Close"
 					>
 						<svg

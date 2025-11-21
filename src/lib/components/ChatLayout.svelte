@@ -271,13 +271,13 @@
 						bind:value={editingTitle}
 						on:keydown={handleKeyDown}
 						on:blur={saveTitle}
-						class="w-full rounded-md border border-stone-400 bg-white px-2 py-0.5 text-lg font-semibold text-stone-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+						class="w-full rounded-md border border-stone-400 bg-white px-2 py-0.5 text-lg font-semibold text-text-inverse focus:ring-2 focus:ring-blue-500 focus:outline-none"
 					/>
 				{:else}
 					<button
 						type="button"
 						on:click={startEditing}
-						class="w-full truncate rounded-md px-2 py-0.5 text-left text-lg font-semibold text-stone-200 hover:bg-stone-100 hover:text-stone-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+						class="w-full truncate rounded-md px-2 py-0.5 text-left text-lg font-semibold text-text-main hover:bg-stone-100 hover:text-text-inverse focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
 						title={sessionTitle}
 					>
 						{sessionTitle}
@@ -294,33 +294,38 @@
 					)}
 					{@const lastAiLog = [...logs].reverse().find((l) => l.speaker === 'ai' && l.tokenUsage)}
 					{@const lastResponseTokens = lastAiLog?.tokenUsage?.total || 0}
-					<div class="ml-2 flex flex-col gap-0.5 text-stone-400" title="Last / Total Tokens">
+					<div
+						class="ml-2 grid grid-cols-[auto_auto] items-center gap-x-2 gap-y-0.5 text-right text-text-muted"
+						title="Last / Total Tokens"
+					>
 						<!-- Last Response -->
-						<div class="flex items-center justify-end gap-1.5">
-							<span class="text-[9px] font-bold tracking-wider text-stone-500 uppercase">Last</span>
-							<span class="text-[10px] font-medium tabular-nums">
-								{lastResponseTokens > 999
-									? (lastResponseTokens / 1000).toFixed(1) + 'k'
-									: lastResponseTokens}
-							</span>
-						</div>
+						<span
+							class="text-right text-[9px] font-bold tracking-wider text-text-disabled uppercase"
+							>Last</span
+						>
+						<span class="text-right text-[10px] font-medium tabular-nums">
+							{lastResponseTokens > 999
+								? (lastResponseTokens / 1000).toFixed(1) + 'k'
+								: lastResponseTokens}
+						</span>
+
 						<!-- Total Session -->
-						<div class="flex items-center justify-end gap-1.5">
-							<span class="text-[9px] font-bold tracking-wider text-stone-500 uppercase">Total</span
-							>
-							<span class="text-[10px] font-medium tabular-nums">
-								{sessionTotalTokens > 999
-									? (sessionTotalTokens / 1000).toFixed(1) + 'k'
-									: sessionTotalTokens}
-							</span>
-						</div>
+						<span
+							class="text-right text-[9px] font-bold tracking-wider text-text-disabled uppercase"
+							>Total</span
+						>
+						<span class="text-right text-[10px] font-medium tabular-nums">
+							{sessionTotalTokens > 999
+								? (sessionTotalTokens / 1000).toFixed(1) + 'k'
+								: sessionTotalTokens}
+						</span>
 					</div>
 				{/if}
 				<!-- ハンバーガーメニューアイコン -->
 				<button
 					type="button"
 					on:click={openMenu}
-					class="rounded p-1 text-stone-600 hover:bg-stone-200 focus:ring-2 focus:ring-stone-400 focus:outline-none"
+					class="rounded p-1 text-text-muted hover:bg-stone-200 focus:ring-2 focus:ring-stone-400 focus:outline-none"
 					aria-label="Menu"
 				>
 					<svg
@@ -365,19 +370,33 @@
 					}
 				}}
 				placeholder={isLoading ? '送信中...' : 'メッセージを入力...'}
-				class="flex-1 resize-none overflow-y-auto rounded-lg border border-stone-600 p-2 leading-normal text-stone-200"
+				class="flex-1 resize-none overflow-y-auto rounded-lg border border-stone-600 p-2 leading-normal text-text-main"
 				style="max-height: 25vh;"
 			></textarea>
-			<button
-				type="button"
-				on:click={handleSubmit}
-				class="flex h-10 w-10 items-center justify-center rounded-full border-none bg-btn-primary-bg text-btn-primary-text transition-all duration-200 hover:bg-btn-primary-hover-bg disabled:cursor-not-allowed disabled:opacity-50"
-				disabled={isLoading || !userInput.trim()}
-				aria-label="送信"
-			>
-				{#if isLoading}
-					<LoadingIndicator size="sm" color="bg-stone-600" />
-				{:else}
+			{#if isLoading}
+				<button
+					type="button"
+					on:click={() => dispatch('stop')}
+					class="flex h-10 w-10 items-center justify-center rounded-full border-none bg-stone-800 text-white transition-all duration-200 hover:bg-stone-700"
+					aria-label="停止"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="currentColor"
+						viewBox="0 0 24 24"
+						class="h-6 w-6"
+					>
+						<rect x="6" y="6" width="12" height="12" rx="2" />
+					</svg>
+				</button>
+			{:else}
+				<button
+					type="button"
+					on:click={handleSubmit}
+					class="flex h-10 w-10 items-center justify-center rounded-full border-none bg-btn-primary-bg text-btn-primary-text transition-all duration-200 hover:bg-btn-primary-hover-bg disabled:cursor-not-allowed disabled:opacity-50"
+					disabled={!userInput.trim()}
+					aria-label="送信"
+				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
@@ -392,8 +411,8 @@
 							d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18"
 						/>
 					</svg>
-				{/if}
-			</button>
+				</button>
+			{/if}
 		</form>
 	</div>
 </div>
@@ -404,35 +423,35 @@
 		<button
 			type="button"
 			on:click={handleOpenHistoryDrawer}
-			class="block w-full rounded-md px-4 py-3 text-left text-stone-700 hover:bg-stone-100"
+			class="block w-full rounded-md px-4 py-3 text-left text-text-inverse hover:bg-stone-100"
 		>
 			履歴画面
 		</button>
 		<button
 			type="button"
 			on:click={handleOpenFindModal}
-			class="block w-full rounded-md px-4 py-3 text-left text-stone-700 hover:bg-stone-100"
+			class="block w-full rounded-md px-4 py-3 text-left text-text-inverse hover:bg-stone-100"
 		>
 			探す
 		</button>
 		<button
 			type="button"
 			on:click={handleOpenPublishModal}
-			class="block w-full rounded-md px-4 py-3 text-left text-stone-700 hover:bg-stone-100"
+			class="block w-full rounded-md px-4 py-3 text-left text-text-inverse hover:bg-stone-100"
 		>
 			投稿
 		</button>
 		<button
 			type="button"
 			on:click={handleOpenSessionSettings}
-			class="block w-full rounded-md px-4 py-3 text-left text-stone-700 hover:bg-stone-100"
+			class="block w-full rounded-md px-4 py-3 text-left text-text-inverse hover:bg-stone-100"
 		>
 			セッション設定
 		</button>
 		<button
 			type="button"
 			on:click={handleOpenAppSettings}
-			class="block w-full rounded-md px-4 py-3 text-left text-stone-700 hover:bg-stone-100"
+			class="block w-full rounded-md px-4 py-3 text-left text-text-inverse hover:bg-stone-100"
 		>
 			アプリ設定
 		</button>

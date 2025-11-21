@@ -70,8 +70,9 @@
 	</button>
 
 	<span
-		class="text-sm font-medium text-stone-200"
+		class="text-sm font-medium text-text-main"
 		class:cursor-pointer={!disabled}
+		class:text-text-disabled={disabled}
 		class:text-stone-400={disabled}
 	>
 		{label}

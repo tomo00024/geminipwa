@@ -244,6 +244,7 @@ export interface TokenUsageHistory {
 	inputTokens: number;
 	outputTokens: number;
 	thinkingTokens: number;
+	cachedTokens: number;
 }
 
 export interface Session {

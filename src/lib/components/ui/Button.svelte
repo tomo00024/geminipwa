@@ -12,10 +12,10 @@
 	const variants = {
 		primary:
 			'rounded-lg border-none bg-btn-primary-bg px-4 py-2 text-btn-primary-text hover:bg-btn-primary-hover-bg text-sm',
-		secondary: 'rounded bg-stone-200 px-3 py-2 text-stone-800 hover:bg-stone-300 text-sm',
+		secondary: 'rounded bg-stone-200 px-3 py-2 text-text-inverse hover:bg-stone-300 text-sm',
 		danger: 'rounded bg-red-200 px-3 py-2 text-red-800 hover:bg-red-300 text-sm',
 		menu: 'rounded-full border border-btn-menu-border bg-btn-menu-bg px-3 py-1 text-btn-menu-text hover:border-btn-menu-hover-border hover:bg-btn-menu-hover-bg text-sm whitespace-nowrap',
-		blue: 'rounded-md bg-stone-200 px-4 py-2 text-sm font-semibold text-stone-800 hover:bg-stone-300'
+		blue: 'rounded-md bg-stone-200 px-4 py-2 text-sm font-semibold text-text-inverse hover:bg-stone-300'
 	};
 </script>
 

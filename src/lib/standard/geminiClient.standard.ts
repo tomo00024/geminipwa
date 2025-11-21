@@ -11,6 +11,7 @@ export interface StandardChatResponse {
 		promptTokenCount: number;
 		candidatesTokenCount: number;
 		thoughtsTokenCount?: number;
+		cachedContentTokenCount?: number;
 		totalTokenCount: number;
 	};
 }
@@ -92,7 +93,8 @@ export async function callGeminiApiOnClient(
 	model: string,
 	appSettings: AppSettings,
 	context: ConversationContext,
-	userInput: string
+	userInput: string,
+	signal?: AbortSignal
 ): Promise<StandardChatResponse> {
 	const contents = prepareGeminiContents(appSettings, context, userInput);
 
@@ -150,7 +152,8 @@ export async function callGeminiApiOnClient(
 			const response = await fetch(API_URL, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(requestBody)
+				body: JSON.stringify(requestBody),
+				signal
 			});
 
 			if (response.ok) {
@@ -232,6 +235,14 @@ export async function callGeminiApiOnClient(
 				);
 				await new Promise((resolve) => setTimeout(resolve, waitTime));
 				continue;
+			}
+			// AbortErrorの場合はそのままスローして呼び出し元で処理させる
+			if (
+				(error instanceof DOMException && error.name === 'AbortError') ||
+				(error instanceof Error && error.name === 'AbortError') ||
+				(error instanceof Error && error.message.includes('aborted'))
+			) {
+				throw error;
 			}
 		}
 	}

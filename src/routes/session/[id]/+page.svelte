@@ -49,11 +49,24 @@
 	let lastProcessedSessionId: string | null = null;
 	let lastProcessedLogCount: number = 0;
 	let displayLimit = 20;
+	let abortController: AbortController | null = null;
 
 	async function handleLoadPrevious() {
 		// 読み込むデータが残っている場合のみ増やす
 		if ($chatSessionStore.displayableLogs.length > displayLimit) {
 			displayLimit += 20;
+		}
+	}
+
+	function handleStop() {
+		if (abortController) {
+			try {
+				abortController.abort();
+			} catch (e) {
+				console.log('Abort triggered error (expected):', e);
+			}
+			abortController = null;
+			isLoading = false;
 		}
 	}
 
@@ -82,15 +95,24 @@
 		const currentUserInput = userInput;
 		userInput = '';
 		isLoading = true;
+		abortController = new AbortController();
 
 		try {
-			await sendUserMessage($currentSession, currentUserInput);
+			await sendUserMessage($currentSession, currentUserInput, abortController.signal);
 		} catch (error) {
-			console.error('Error sending message:', error);
-			alert(`エラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
-			// エラー時は入力を復元してもいいかもしれないが、今回はシンプルにする
+			if (
+				(error instanceof DOMException && error.name === 'AbortError') ||
+				(error instanceof Error && error.name === 'AbortError') ||
+				(error instanceof Error && error.message.includes('aborted'))
+			) {
+				console.log('Request cancelled by user');
+			} else {
+				console.error('Error sending message:', error);
+				alert(`エラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			}
 		} finally {
 			isLoading = false;
+			abortController = null;
 		}
 	}
 
@@ -102,13 +124,23 @@
 		}
 
 		isLoading = true;
+		abortController = new AbortController();
 		try {
-			await retryMessage($currentSession, userMessageId);
+			await retryMessage($currentSession, userMessageId, abortController.signal);
 		} catch (error) {
-			console.error('Error retrying message:', error);
-			alert(`エラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			if (
+				(error instanceof DOMException && error.name === 'AbortError') ||
+				(error instanceof Error && error.name === 'AbortError') ||
+				(error instanceof Error && error.message.includes('aborted'))
+			) {
+				console.log('Retry cancelled by user');
+			} else {
+				console.error('Error retrying message:', error);
+				alert(`エラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			}
 		} finally {
 			isLoading = false;
+			abortController = null;
 		}
 	}
 
@@ -135,11 +167,12 @@
 		sessionTitle={$currentSession.title}
 		on:updateTitle={handleUpdateTitle}
 		loadPrevious={handleLoadPrevious}
+		on:stop={handleStop}
 	>
 		{#if $currentSession.viewMode === 'game'}
 			<GameChatView currentSession={$currentSession} />
 		{:else}
-			<StandardChatView {handleRetry} limit={displayLimit} />
+			<StandardChatView {handleRetry} limit={displayLimit} {isLoading} />
 		{/if}
 	</ChatLayout>
 {:else}

@@ -8,6 +8,8 @@
 	let className: string = '';
 	export { className as class };
 
+	let textarea: HTMLTextAreaElement;
+
 	function autosize(node: HTMLTextAreaElement) {
 		function resize() {
 			node.style.height = 'auto';
@@ -27,16 +29,18 @@
 
 <div class={className}>
 	{#if label}
-		<label for={id} class="mb-1 block text-lg font-bold text-stone-200">{label}</label>
+		<label for={id} class="mb-1 block text-lg font-bold text-text-main">{label}</label>
 	{/if}
 	<textarea
 		{id}
 		bind:value
-		use:autosize
-		{rows}
+		bind:this={textarea}
 		{placeholder}
+		{rows}
 		{disabled}
-		class="w-full resize-none rounded-lg border border-stone-600 bg-transparent px-3 py-2 text-stone-200 focus:outline-none disabled:opacity-50"
+		on:input
+		on:keydown
+		class="w-full resize-none rounded-lg border border-stone-600 bg-transparent px-3 py-2 text-text-main focus:outline-none disabled:opacity-50"
 		{...$$restProps}
 	></textarea>
 </div>

@@ -49,11 +49,19 @@
 		const output = filtered.reduce((acc, entry) => acc + entry.outputTokens, 0);
 		const thinking = filtered.reduce((acc, entry) => acc + (entry.thinkingTokens || 0), 0);
 
+		// キャッシュトークン数 (実際のデータを使用)
+		const cached = filtered.reduce((acc, entry) => acc + (entry.cachedTokens || 0), 0);
+
+		// 【計算】キャッシュ率（ゼロ除算対策）
+		const cacheRate = input > 0 ? (cached / input) * 100 : 0;
+
 		return {
 			total,
 			input,
 			output,
 			thinking,
+			cached,
+			cacheRate,
 			periodLabel: selectedRange === 'day' ? endStr : `${startStr} 〜 ${endStr}`
 		};
 	})();
@@ -79,7 +87,7 @@
 				<div class="mb-3 text-sm font-medium text-stone-400">
 					集計期間: <span class="text-stone-200">{rangeStats.periodLabel}</span>
 				</div>
-				<div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+				<div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
 					<div class="rounded-md bg-stone-700/50 p-3">
 						<div class="text-xs text-blue-400">合計トークン</div>
 						<div class="mt-1 text-xl font-bold text-blue-300">
@@ -104,8 +112,34 @@
 							{rangeStats.thinking.toLocaleString()}
 						</div>
 					</div>
+					<div class="relative overflow-hidden rounded-md bg-stone-700/30 p-3">
+						<div class="text-xs text-emerald-400">キャッシュ (Cached)</div>
+						<div class="mt-1 text-lg font-semibold text-emerald-300">
+							{rangeStats.cached.toLocaleString()}
+						</div>
+					</div>
+					<div class="rounded-md bg-stone-700/30 p-3">
+						<div class="text-xs text-emerald-400">キャッシュ率 (Rate)</div>
+						<div class="mt-1 text-lg font-semibold text-emerald-300">
+							{rangeStats.cacheRate.toFixed(1)}<span class="ml-0.5 text-sm">%</span>
+						</div>
+					</div>
 				</div>
 			</div>
 		{/if}
+		<div class="rounded-lg border border-stone-600 bg-transparent p-4 text-xs text-stone-400">
+			<p class="mb-1">
+				<span class="font-bold text-emerald-400">● コスト仕様:</span>
+				暗黙的キャッシュ（Implicit Caching）は一定長以上の共通プレフィックス（2.5Pro: 4096+）に対し自動適用され、入力コストを大幅に削減（約90%OFF）しますがストレージ料金は発生しません。
+			</p>
+			<p class="mb-1">
+				<span class="font-bold text-yellow-400">● レート制限:</span>
+				課金計算とは異なり、APIレート制限（TPM/RPM）およびコンテキストウィンドウの算出においてはキャッシュ分は減免されず、履歴を含めた全トークン数がカウント対象となります。
+			</p>
+			<p>
+				<span class="font-bold text-blue-400">● 運用戦略:</span>
+				有料枠では履歴を積み上げてキャッシュ率を高める運用がコスト最適解となりますが、無料枠では制限回避のため要約等による物理的なトークン削減が必須となります。
+			</p>
+		</div>
 	</div>
 </Section>

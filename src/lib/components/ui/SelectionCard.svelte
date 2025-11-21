@@ -14,6 +14,10 @@
 	class:hover:bg-[#262626]={!selected}
 	on:click={onClick}
 >
-	<h3 class="mb-1 font-bold" style:color={selected ? '#e5e5e5' : '#d4d4d4'}>{title}</h3>
-	<p class="text-xs" style:color={selected ? '#a3a3a3' : '#737373'}>{description}</p>
+	<h3 class="mb-1 font-bold" style:color={selected ? 'var(--text-main)' : 'var(--text-muted)'}>
+		{title}
+	</h3>
+	<p class="text-xs" style:color={selected ? 'var(--text-muted)' : 'var(--text-disabled)'}>
+		{description}
+	</p>
 </div>

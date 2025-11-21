@@ -34,7 +34,8 @@ export async function callGeminiApi(
 	model: string,
 	appSettings: AppSettings,
 	context: ConversationContext,
-	userInput: string
+	userInput: string,
+	signal?: AbortSignal
 ): Promise<StandardChatResponse | OneStepFCChatResponse /* | TwoStepFCChatResponse */> {
 	switch (context.featureSettings.apiMode) {
 		case 'oneStepFC':
@@ -45,11 +46,11 @@ export async function callGeminiApi(
 			// alert('TwoStepFC is not implemented yet.'); // 未実装なことを示す仮のアラート
 			// return callGeminiApiWithTwoStepFC(apiKey, context, userInput);
 			// 現時点ではTwoStepFCは未実装のため、一旦Standardを呼び出すようにしておきます
-			return callGeminiApiOnClient(apiKey, model, appSettings, context, userInput);
+			return callGeminiApiOnClient(apiKey, model, appSettings, context, userInput, signal);
 
 		case 'standard':
 		default:
-			return callGeminiApiOnClient(apiKey, model, appSettings, context, userInput);
+			return callGeminiApiOnClient(apiKey, model, appSettings, context, userInput, signal);
 	}
 }
 
